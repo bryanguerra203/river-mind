@@ -7,7 +7,7 @@ import {
   TouchableOpacity, 
   Alert,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { 
   Calendar, 
   Clock, 
@@ -105,180 +105,183 @@ export default function SessionDetailScreen() {
   }
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.gameType}>
-            {session.gameType} • {session.sessionType}
-          </Text>
-          <Text style={styles.location}>{session.location}</Text>
-        </View>
-        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-          <Edit2 size={20} color={colors.text.primary} />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.profitCard}>
-        <Text style={styles.profitLabel}>Session Profit</Text>
-        <Text 
-          style={[
-            styles.profitAmount, 
-            isProfit ? styles.positive : styles.negative
-          ]}
-        >
-          {isProfit ? '+' : ''}{formatCurrency(profit)}
-        </Text>
-        
-        <View style={styles.profitDetails}>
-          <View style={styles.profitDetailItem}>
-            <ArrowDown size={16} color={colors.accent.danger} />
-            <Text style={styles.profitDetailLabel}>Buy-in</Text>
-            <Text style={styles.profitDetailValue}>{formatCurrency(session.buyIn)}</Text>
-          </View>
-          
-          <View style={styles.profitDetailItem}>
-            <ArrowUp size={16} color={colors.accent.success} />
-            <Text style={styles.profitDetailLabel}>Cash Out</Text>
-            <Text style={styles.profitDetailValue}>{formatCurrency(session.cashOut)}</Text>
-          </View>
-        </View>
-      </View>
-      
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Clock size={20} color={colors.text.secondary} />
-          <View style={styles.statContent}>
-            <Text style={styles.statLabel}>Duration</Text>
-            <Text style={styles.statValue}>{formatDuration(session.duration)}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.statCard}>
-          <DollarSign size={20} color={colors.text.secondary} />
-          <View style={styles.statContent}>
-            <Text style={styles.statLabel}>Hourly Rate</Text>
-            <Text 
-              style={[
-                styles.statValue, 
-                hourlyRate > 0 ? styles.positive : styles.negative
-              ]}
-            >
-              {formatHourlyRate(hourlyRate)}
+    <>
+      <Stack.Screen options={{ title: "Session Details", headerBackTitle: "Sessions" }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.gameType}>
+              {session.gameType} • {session.sessionType}
             </Text>
+            <Text style={styles.location}>{session.location}</Text>
           </View>
-        </View>
-      </View>
-      
-      <View style={styles.detailsContainer}>
-        <Text style={styles.sectionTitle}>Session Details</Text>
-        
-        <View style={styles.detailItem}>
-          <Calendar size={20} color={colors.text.secondary} />
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Date</Text>
-            <Text style={styles.detailValue}>{formattedDate}</Text>
-          </View>
+          <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+            <Edit2 size={20} color={colors.text.primary} />
+          </TouchableOpacity>
         </View>
         
-        {/* Show start time for live sessions */}
-        {isActive && session.startTime && (
-          <View style={styles.detailItem}>
-            <Play size={20} color={colors.accent.warning} />
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Started</Text>
-              <Text style={styles.detailValue}>{formatTimeOnly(session.startTime)}</Text>
+        <View style={styles.profitCard}>
+          <Text style={styles.profitLabel}>Session Profit</Text>
+          <Text 
+            style={[
+              styles.profitAmount, 
+              isProfit ? styles.positive : styles.negative
+            ]}
+          >
+            {isProfit ? '+' : ''}{formatCurrency(profit)}
+          </Text>
+          
+          <View style={styles.profitDetails}>
+            <View style={styles.profitDetailItem}>
+              <ArrowDown size={16} color={colors.accent.danger} />
+              <Text style={styles.profitDetailLabel}>Buy-in</Text>
+              <Text style={styles.profitDetailValue}>{formatCurrency(session.buyIn)}</Text>
+            </View>
+            
+            <View style={styles.profitDetailItem}>
+              <ArrowUp size={16} color={colors.accent.success} />
+              <Text style={styles.profitDetailLabel}>Cash Out</Text>
+              <Text style={styles.profitDetailValue}>{formatCurrency(session.cashOut)}</Text>
             </View>
           </View>
-        )}
+        </View>
         
-        {/* Show start and end times for completed sessions that have them */}
-        {!isActive && session.startTime && session.endTime && (
-          <>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Clock size={20} color={colors.text.secondary} />
+            <View style={styles.statContent}>
+              <Text style={styles.statLabel}>Duration</Text>
+              <Text style={styles.statValue}>{formatDuration(session.duration)}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.statCard}>
+            <DollarSign size={20} color={colors.text.secondary} />
+            <View style={styles.statContent}>
+              <Text style={styles.statLabel}>Hourly Rate</Text>
+              <Text 
+                style={[
+                  styles.statValue, 
+                  hourlyRate > 0 ? styles.positive : styles.negative
+                ]}
+              >
+                {formatHourlyRate(hourlyRate)}
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.detailsContainer}>
+          <Text style={styles.sectionTitle}>Session Details</Text>
+          
+          <View style={styles.detailItem}>
+            <Calendar size={20} color={colors.text.secondary} />
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Date</Text>
+              <Text style={styles.detailValue}>{formattedDate}</Text>
+            </View>
+          </View>
+          
+          {/* Show start time for live sessions */}
+          {isActive && session.startTime && (
             <View style={styles.detailItem}>
-              <Play size={20} color={colors.text.secondary} />
+              <Play size={20} color={colors.accent.warning} />
               <View style={styles.detailContent}>
                 <Text style={styles.detailLabel}>Started</Text>
                 <Text style={styles.detailValue}>{formatTimeOnly(session.startTime)}</Text>
               </View>
             </View>
-            
-            <View style={styles.detailItem}>
-              <Square size={20} color={colors.text.secondary} />
-              <View style={styles.detailContent}>
-                <Text style={styles.detailLabel}>Ended</Text>
-                <Text style={styles.detailValue}>{formatTimeOnly(session.endTime)}</Text>
+          )}
+          
+          {/* Show start and end times for completed sessions that have them */}
+          {!isActive && session.startTime && session.endTime && (
+            <>
+              <View style={styles.detailItem}>
+                <Play size={20} color={colors.text.secondary} />
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Started</Text>
+                  <Text style={styles.detailValue}>{formatTimeOnly(session.startTime)}</Text>
+                </View>
               </View>
+              
+              <View style={styles.detailItem}>
+                <Square size={20} color={colors.text.secondary} />
+                <View style={styles.detailContent}>
+                  <Text style={styles.detailLabel}>Ended</Text>
+                  <Text style={styles.detailValue}>{formatTimeOnly(session.endTime)}</Text>
+                </View>
+              </View>
+            </>
+          )}
+          
+          <View style={styles.detailItem}>
+            <MapPin size={20} color={colors.text.secondary} />
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Location</Text>
+              <Text style={styles.detailValue}>
+                {session.location} ({session.locationType})
+              </Text>
             </View>
-          </>
+          </View>
+          
+          <View style={styles.detailItem}>
+            <DollarSign size={20} color={colors.text.secondary} />
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Stakes</Text>
+              <Text style={styles.detailValue}>{session.stakes}</Text>
+            </View>
+          </View>
+        </View>
+        
+        {session.notes && (
+          <View style={styles.notesContainer}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            <View style={styles.notesCard}>
+              <Text style={styles.notesText}>{session.notes}</Text>
+            </View>
+          </View>
         )}
         
-        <View style={styles.detailItem}>
-          <MapPin size={20} color={colors.text.secondary} />
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>
-              {session.location} ({session.locationType})
-            </Text>
+        {session.tags && session.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            <Text style={styles.sectionTitle}>Tags</Text>
+            <View style={styles.tagsList}>
+              {session.tags.map((tag, index) => (
+                <View key={index} style={styles.tagItem}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
           </View>
+        )}
+        
+        <View style={styles.deleteContainer}>
+          {isActive && (
+            <Button 
+              title="End Session" 
+              onPress={handleEndSession} 
+              style={[styles.actionButton, styles.endButton]}
+            />
+          )}
+          <Button 
+            title="Delete Session" 
+            onPress={handleDelete} 
+            variant="danger"
+            style={styles.actionButton}
+            loading={isDeleting}
+            disabled={isDeleting}
+          />
         </View>
         
-        <View style={styles.detailItem}>
-          <DollarSign size={20} color={colors.text.secondary} />
-          <View style={styles.detailContent}>
-            <Text style={styles.detailLabel}>Stakes</Text>
-            <Text style={styles.detailValue}>{session.stakes}</Text>
-          </View>
-        </View>
-      </View>
-      
-      {session.notes && (
-        <View style={styles.notesContainer}>
-          <Text style={styles.sectionTitle}>Notes</Text>
-          <View style={styles.notesCard}>
-            <Text style={styles.notesText}>{session.notes}</Text>
-          </View>
-        </View>
-      )}
-      
-      {session.tags && session.tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          <Text style={styles.sectionTitle}>Tags</Text>
-          <View style={styles.tagsList}>
-            {session.tags.map((tag, index) => (
-              <View key={index} style={styles.tagItem}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-      
-      <View style={styles.deleteContainer}>
         {isActive && (
-          <Button 
-            title="End Session" 
-            onPress={handleEndSession} 
-            style={[styles.actionButton, styles.endButton]}
+          <EndSessionModal 
+            visible={isEnding}
+            onClose={handleCloseEndModal}
+            session={session}
           />
         )}
-        <Button 
-          title="Delete Session" 
-          onPress={handleDelete} 
-          variant="danger"
-          style={styles.actionButton}
-          loading={isDeleting}
-          disabled={isDeleting}
-        />
-      </View>
-      
-      {isActive && (
-        <EndSessionModal 
-          visible={isEnding}
-          onClose={handleCloseEndModal}
-          session={session}
-        />
-      )}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
