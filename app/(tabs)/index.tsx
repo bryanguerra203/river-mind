@@ -92,7 +92,7 @@ export default function DashboardScreen() {
           <View style={styles.statsRow}>
             <StatsCard 
               title="Total Time" 
-              value={formatDuration(stats.totalHours * 60)}
+              value={formatDuration(Math.round(stats.totalHours * 60))}
             />
             <StatsCard 
               title="Win Rate" 

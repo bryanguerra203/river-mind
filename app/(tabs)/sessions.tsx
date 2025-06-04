@@ -6,13 +6,11 @@ import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
 import SessionCard from '@/components/SessionCard';
 import Button from '@/components/Button';
-import SegmentedControl from '@/components/SegmentedControl';
 
 export default function SessionsScreen() {
   const router = useRouter();
   const { sessions } = useSessionStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'profit'>('date');
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,10 +27,8 @@ export default function SessionsScreen() {
     router.push(`/session/${id}`);
   };
 
-  const processedSessions = sessions.sort((a, b) => {
-    if (sortBy === 'profit') {
-      return (b.cashOut - b.buyIn) - (a.cashOut - a.buyIn);
-    }
+  // Sort sessions by date (newest first)
+  const sortedSessions = sessions.sort((a, b) => {
     try {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     } catch (e) {
@@ -65,31 +61,17 @@ export default function SessionsScreen() {
     }
 
     return (
-      <>
-        <View style={styles.filtersContainer}>
-          <SegmentedControl
-            options={[
-              { label: 'Sort by Date', value: 'date' },
-              { label: 'Sort by Profit', value: 'profit' }
-            ]}
-            value={sortBy}
-            onChange={(value) => setSortBy(value as 'date' | 'profit')}
-            style={styles.segmentedControl}
-          />
-        </View>
-
-        <FlatList
-          data={processedSessions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => handleSessionPress(item.id)}>
-              <SessionCard session={item} />
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      </>
+      <FlatList
+        data={sortedSessions}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => handleSessionPress(item.id)}>
+            <SessionCard session={item} />
+          </TouchableOpacity>
+        )}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
     );
   };
 
@@ -168,12 +150,6 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     width: 200,
-  },
-  filtersContainer: {
-    marginBottom: 20,
-  },
-  segmentedControl: {
-    marginBottom: 12,
   },
   listContent: {
     paddingBottom: 16,

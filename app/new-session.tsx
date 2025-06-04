@@ -194,7 +194,7 @@ export default function NewSessionScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 180 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
     >
       <ScrollView 
         style={styles.scrollView} 
@@ -449,8 +449,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingTop: 60,
-    paddingBottom: 200,
+    paddingTop: 40,
+    paddingBottom: 300,
   },
   formSection: {
     marginBottom: 24,
