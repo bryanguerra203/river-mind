@@ -1,9 +1,12 @@
 export const gameTypes = [
-  { id: 'holdem', name: "Texas Hold'em" },
-  { id: 'omaha', name: 'Omaha' },
+  { id: 'nl-holdem', name: 'No-Limit Hold\'em' },
+  { id: 'plo', name: 'Pot-Limit Omaha' },
+  { id: 'limit-holdem', name: 'Limit Hold\'em' },
+  { id: 'nl-omaha', name: 'No-Limit Omaha' },
+  { id: 'plo8', name: 'Pot-Limit Omaha Hi/Lo' },
   { id: 'stud', name: '7-Card Stud' },
+  { id: 'razz', name: 'Razz' },
   { id: 'mixed', name: 'Mixed Games' },
-  { id: 'other', name: 'Other' },
 ];
 
 export const sessionTypes = [
@@ -23,6 +26,8 @@ export const sessionStatuses = [
 ];
 
 export const defaultStakes = [
+  { id: '0.25-0.50', name: '.25/.50' },
+  { id: '0.50-1', name: '.50/1' },
   { id: '1-2', name: '1/2' },
   { id: '1-3', name: '1/3' },
   { id: '2-5', name: '2/5' },
