@@ -112,7 +112,11 @@ export default function BankrollSessionScreen() {
   
   const handleEndSession = () => {
     // Check if there are players who haven't cashed out
-    const uncashedPlayers = session.players?.filter(p => p.cashOuts.length === 0) || [];
+    const players = session.players || [];
+    const uncashedPlayers = players.filter(p => {
+      const cashOuts = p.cashOuts || [];
+      return cashOuts.length === 0;
+    });
     
     if (uncashedPlayers.length > 0) {
       Alert.alert(
@@ -160,16 +164,28 @@ export default function BankrollSessionScreen() {
     setShowDeleteMenu(!showDeleteMenu);
   };
   
-  // Calculate session stats
-  const totalBuyIn = session.totalBuyIns;
-  const totalCashOut = session.totalCashOuts;
+  // Calculate session stats with safe array access
+  const totalBuyIn = session.totalBuyIns || 0;
+  const totalCashOut = session.totalCashOuts || 0;
   const sessionProfit = totalCashOut - totalBuyIn;
-  const activePlayers = session.players?.filter(p => p.cashOuts.length === 0).length || 0;
-  const cashedOutPlayers = session.players?.filter(p => p.cashOuts.length > 0).length || 0;
+  const players = session.players || [];
+  const activePlayers = players.filter(p => {
+    const cashOuts = p.cashOuts || [];
+    return cashOuts.length === 0;
+  }).length;
+  const cashedOutPlayers = players.filter(p => {
+    const cashOuts = p.cashOuts || [];
+    return cashOuts.length > 0;
+  }).length;
   
   return (
     <>
-      <Stack.Screen options={{ title: "Poker Session", headerBackTitle: "Bankroll" }} />
+      <Stack.Screen 
+        options={{ 
+          title: "Poker Session", 
+          headerBackTitle: "Bankroll" 
+        }} 
+      />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -221,7 +237,7 @@ export default function BankrollSessionScreen() {
               <View style={styles.statHeader}>
                 <Text style={styles.statTitle}>Pot Amount</Text>
               </View>
-              <Text style={styles.potAmount}>{formatCurrency(session.potAmount)}</Text>
+              <Text style={styles.potAmount}>{formatCurrency(session.potAmount || 0)}</Text>
             </View>
             
             <View style={styles.statsRow}>
@@ -272,135 +288,140 @@ export default function BankrollSessionScreen() {
               )}
             </View>
             
-            {!session.players || session.players.length === 0 ? (
+            {players.length === 0 ? (
               <View style={styles.emptyPlayersContainer}>
                 <Text style={styles.emptyPlayersText}>
                   No players added yet. Add players to track buy-ins and cash-outs.
                 </Text>
               </View>
             ) : (
-              session.players.map((player) => (
-                <View key={player.id} style={styles.playerCard}>
-                  <TouchableOpacity 
-                    style={styles.playerHeader}
-                    onPress={() => togglePlayerExpanded(player.id)}
-                  >
-                    <View style={styles.playerInfo}>
-                      <View style={styles.playerNameContainer}>
-                        <Text style={styles.playerName}>{player.name}</Text>
-                        {expandedPlayers[player.id] ? (
-                          <ChevronUp size={16} color={colors.text.secondary} />
-                        ) : (
-                          <ChevronDown size={16} color={colors.text.secondary} />
-                        )}
-                      </View>
-                      <View style={styles.playerStats}>
-                        <View style={styles.playerStat}>
-                          <ArrowDown size={14} color={colors.accent.danger} />
-                          <Text style={styles.playerStatText}>
-                            {formatCurrency(player.totalBuyIn)}
-                          </Text>
+              players.map((player) => {
+                const playerBuyIns = player.buyIns || [];
+                const playerCashOuts = player.cashOuts || [];
+                
+                return (
+                  <View key={player.id} style={styles.playerCard}>
+                    <TouchableOpacity 
+                      style={styles.playerHeader}
+                      onPress={() => togglePlayerExpanded(player.id)}
+                    >
+                      <View style={styles.playerInfo}>
+                        <View style={styles.playerNameContainer}>
+                          <Text style={styles.playerName}>{player.name}</Text>
+                          {expandedPlayers[player.id] ? (
+                            <ChevronUp size={16} color={colors.text.secondary} />
+                          ) : (
+                            <ChevronDown size={16} color={colors.text.secondary} />
+                          )}
                         </View>
-                        
-                        {player.cashOuts.length > 0 && (
-                          <>
-                            <View style={styles.playerStat}>
-                              <ArrowUp size={14} color={colors.accent.success} />
-                              <Text style={styles.playerStatText}>
-                                {formatCurrency(player.totalCashOut)}
-                              </Text>
-                            </View>
-                            
-                            <View style={styles.playerStat}>
-                              <Text 
-                                style={[
-                                  styles.playerProfit,
-                                  player.profit >= 0 ? styles.positive : styles.negative
-                                ]}
-                              >
-                                {player.profit >= 0 ? '+' : ''}{formatCurrency(player.profit)}
-                              </Text>
-                            </View>
-                          </>
-                        )}
-                      </View>
-                    </View>
-                    
-                    <View style={styles.playerActions}>
-                      {session.isActive && player.cashOuts.length === 0 && (
-                        <View style={styles.actionButtons}>
-                          <TouchableOpacity 
-                            style={styles.buyInButton}
-                            onPress={() => handleAddBuyIn(player)}
-                          >
-                            <PlusCircle size={18} color={colors.accent.primary} />
-                          </TouchableOpacity>
+                        <View style={styles.playerStats}>
+                          <View style={styles.playerStat}>
+                            <ArrowDown size={14} color={colors.accent.danger} />
+                            <Text style={styles.playerStatText}>
+                              {formatCurrency(player.totalBuyIn || 0)}
+                            </Text>
+                          </View>
                           
-                          <Button 
-                            title="Cash Out" 
-                            variant="outline"
-                            size="small"
-                            onPress={() => handleCashOutPlayer(player)}
-                            style={styles.cashOutButton}
-                          />
+                          {playerCashOuts.length > 0 && (
+                            <>
+                              <View style={styles.playerStat}>
+                                <ArrowUp size={14} color={colors.accent.success} />
+                                <Text style={styles.playerStatText}>
+                                  {formatCurrency(player.totalCashOut || 0)}
+                                </Text>
+                              </View>
+                              
+                              <View style={styles.playerStat}>
+                                <Text 
+                                  style={[
+                                    styles.playerProfit,
+                                    (player.profit || 0) >= 0 ? styles.positive : styles.negative
+                                  ]}
+                                >
+                                  {(player.profit || 0) >= 0 ? '+' : ''}{formatCurrency(player.profit || 0)}
+                                </Text>
+                              </View>
+                            </>
+                          )}
                         </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                  
-                  {expandedPlayers[player.id] && (
-                    <>
-                      <View style={styles.buyInsContainer}>
-                        <Text style={styles.buyInsTitle}>Buy-in History</Text>
-                        {player.buyIns && player.buyIns.length > 0 ? (
-                          player.buyIns.map((buyIn, index) => (
-                            <TouchableOpacity 
-                              key={buyIn.id} 
-                              style={styles.buyInItem}
-                              onPress={() => session.isActive && handleEditBuyIn(player, buyIn)}
-                              disabled={!session.isActive}
-                            >
-                              <Text style={styles.buyInNumber}>#{index + 1}</Text>
-                              <Text style={styles.buyInAmount}>{formatCurrency(buyIn.amount)}</Text>
-                              <Text style={styles.buyInTime}>{formatTime(buyIn.timestamp)}</Text>
-                              {session.isActive && (
-                                <View style={styles.editBuyInIcon}>
-                                  <Edit2 size={14} color={colors.accent.primary} />
-                                </View>
-                              )}
-                            </TouchableOpacity>
-                          ))
-                        ) : (
-                          <Text style={styles.noBuyInsText}>No buy-ins recorded</Text>
-                        )}
                       </View>
                       
-                      {player.cashOuts && player.cashOuts.length > 0 && (
-                        <View style={styles.cashOutsContainer}>
-                          <Text style={styles.cashOutsTitle}>Cash Out History</Text>
-                          {player.cashOuts.map((cashOut, index) => (
+                      <View style={styles.playerActions}>
+                        {session.isActive && playerCashOuts.length === 0 && (
+                          <View style={styles.actionButtons}>
                             <TouchableOpacity 
-                              key={cashOut.id} 
-                              style={styles.cashOutItem}
-                              onPress={() => session.isActive && handleEditCashOut(player, cashOut)}
-                              disabled={!session.isActive}
+                              style={styles.buyInButton}
+                              onPress={() => handleAddBuyIn(player)}
                             >
-                              <Text style={styles.cashOutNumber}>#{index + 1}</Text>
-                              <Text style={styles.cashOutAmount}>{formatCurrency(cashOut.amount)}</Text>
-                              <Text style={styles.cashOutTime}>{formatTime(cashOut.timestamp)}</Text>
-                              {session.isActive && (
-                                <View style={styles.editCashOutIcon}>
-                                  <Edit2 size={14} color={colors.accent.primary} />
-                                </View>
-                              )}
+                              <PlusCircle size={18} color={colors.accent.primary} />
                             </TouchableOpacity>
-                          ))}
+                            
+                            <Button 
+                              title="Cash Out" 
+                              variant="outline"
+                              size="small"
+                              onPress={() => handleCashOutPlayer(player)}
+                              style={styles.cashOutButton}
+                            />
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                    
+                    {expandedPlayers[player.id] && (
+                      <>
+                        <View style={styles.buyInsContainer}>
+                          <Text style={styles.buyInsTitle}>Buy-in History</Text>
+                          {playerBuyIns.length > 0 ? (
+                            playerBuyIns.map((buyIn, index) => (
+                              <TouchableOpacity 
+                                key={buyIn.id} 
+                                style={styles.buyInItem}
+                                onPress={() => session.isActive && handleEditBuyIn(player, buyIn)}
+                                disabled={!session.isActive}
+                              >
+                                <Text style={styles.buyInNumber}>#{index + 1}</Text>
+                                <Text style={styles.buyInAmount}>{formatCurrency(buyIn.amount)}</Text>
+                                <Text style={styles.buyInTime}>{formatTime(buyIn.timestamp)}</Text>
+                                {session.isActive && (
+                                  <View style={styles.editBuyInIcon}>
+                                    <Edit2 size={14} color={colors.accent.primary} />
+                                  </View>
+                                )}
+                              </TouchableOpacity>
+                            ))
+                          ) : (
+                            <Text style={styles.noBuyInsText}>No buy-ins recorded</Text>
+                          )}
                         </View>
-                      )}
-                    </>
-                  )}
-                </View>
-              ))
+                        
+                        {playerCashOuts.length > 0 && (
+                          <View style={styles.cashOutsContainer}>
+                            <Text style={styles.cashOutsTitle}>Cash Out History</Text>
+                            {playerCashOuts.map((cashOut, index) => (
+                              <TouchableOpacity 
+                                key={cashOut.id} 
+                                style={styles.cashOutItem}
+                                onPress={() => session.isActive && handleEditCashOut(player, cashOut)}
+                                disabled={!session.isActive}
+                              >
+                                <Text style={styles.cashOutNumber}>#{index + 1}</Text>
+                                <Text style={styles.cashOutAmount}>{formatCurrency(cashOut.amount)}</Text>
+                                <Text style={styles.cashOutTime}>{formatTime(cashOut.timestamp)}</Text>
+                                {session.isActive && (
+                                  <View style={styles.editCashOutIcon}>
+                                    <Edit2 size={14} color={colors.accent.primary} />
+                                  </View>
+                                )}
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </View>
+                );
+              })
             )}
           </View>
           

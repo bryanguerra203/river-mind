@@ -68,7 +68,7 @@ function RootLayoutNav() {
           name="session/[id]" 
           options={{ 
             title: "Session Details",
-            headerBackTitle: "Sessions 123",
+            headerBackTitle: "Sessions",
           }} 
         />
         <Stack.Screen 
