@@ -62,8 +62,10 @@ export const formatHourlyRate = (rate: number): string => {
 export const formatDuration = (minutes: number): string => {
   if (isNaN(minutes) || minutes < 0) return '0h 0m';
   
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  // Round to nearest minute
+  const roundedMinutes = Math.round(minutes);
+  const hours = Math.floor(roundedMinutes / 60);
+  const mins = roundedMinutes % 60;
   
   if (hours === 0) {
     return `${mins}m`;

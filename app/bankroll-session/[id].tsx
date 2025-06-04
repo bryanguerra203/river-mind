@@ -11,14 +11,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { 
-  Users, 
-  DollarSign, 
-  Plus, 
   ArrowUp, 
   ArrowDown,
-  Clock,
   Edit2,
-  Save,
   Trash2,
   PlusCircle,
   ChevronDown,

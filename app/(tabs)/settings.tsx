@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Trash2 } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Share } from 'react-native';
+import { Trash2, Download } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
-import Button from '@/components/Button';
+import * as FileSystem from 'expo-file-system';
+import { formatDate, formatTimeOnly } from '@/utils/formatters';
 
 export default function SettingsScreen() {
-  const { clearAllSessions } = useSessionStore();
+  const { clearAllSessions, sessions } = useSessionStore();
 
   const handleClearAllSessions = () => {
     Alert.alert(
@@ -26,6 +27,57 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleExportCSV = async () => {
+    try {
+      // Create CSV header
+      const headers = [
+        'Date',
+        'Game Type',
+        'Session Type',
+        'Location',
+        'Stakes',
+        'Buy In',
+        'Cash Out',
+        'Profit',
+        'Duration (minutes)',
+        'Notes',
+        'Tags'
+      ].join(',');
+
+      // Convert sessions to CSV rows
+      const rows = sessions.map(session => [
+        formatDate(session.date),
+        session.gameType,
+        session.sessionType,
+        `${session.location} (${session.locationType})`,
+        session.stakes,
+        session.buyIn,
+        session.cashOut,
+        session.cashOut - session.buyIn,
+        session.duration,
+        `"${session.notes?.replace(/"/g, '""') || ''}"`,
+        `"${session.tags?.join(';') || ''}"`
+      ].join(','));
+
+      const csvContent = [headers, ...rows].join('\n');
+      
+      // Create a temporary file
+      const fileUri = `${FileSystem.cacheDirectory}poker_sessions_${new Date().toISOString().split('T')[0]}.csv`;
+      await FileSystem.writeAsStringAsync(fileUri, csvContent);
+
+      // Share the file
+      await Share.share({
+        url: fileUri,
+        title: 'Poker Sessions Export',
+        message: 'Here is my poker sessions data export.'
+      });
+
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      Alert.alert('Error', 'Failed to export sessions data.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -35,6 +87,17 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data Management</Text>
         
+        <TouchableOpacity 
+          style={styles.exportButton}
+          onPress={handleExportCSV}
+        >
+          <Download size={20} color={colors.accent.primary} />
+          <Text style={styles.exportButtonText}>Export Sessions as CSV</Text>
+        </TouchableOpacity>
+        <Text style={styles.exportDescription}>
+          Export all your session data as a CSV file.
+        </Text>
+
         <TouchableOpacity 
           style={styles.dangerButton}
           onPress={handleClearAllSessions}
@@ -79,6 +142,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text.primary,
+    marginBottom: 16,
+  },
+  exportButton: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(33, 150, 243, 0.2)',
+  },
+  exportButtonText: {
+    color: colors.accent.primary,
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  exportDescription: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   dangerButton: {

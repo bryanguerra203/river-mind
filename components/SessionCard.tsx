@@ -26,8 +26,10 @@ export default function SessionCard({ session }: SessionCardProps) {
     
     if (isNaN(duration) || duration < 0) return '0h 0m';
     
-    const hours = Math.floor(duration / 60);
-    const mins = duration % 60;
+    // Round to nearest minute
+    const roundedDuration = Math.round(duration);
+    const hours = Math.floor(roundedDuration / 60);
+    const mins = roundedDuration % 60;
     
     if (hours === 0) {
       return `${mins}m`;

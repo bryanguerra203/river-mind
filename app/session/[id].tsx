@@ -258,7 +258,7 @@ export default function SessionDetailScreen() {
           <Button 
             title="End Session" 
             onPress={handleEndSession} 
-            style={[styles.actionButton, styles.endButton]}
+            style={{ ...styles.actionButton, ...styles.endButton }}
           />
         )}
         <Button 
