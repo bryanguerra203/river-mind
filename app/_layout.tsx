@@ -62,12 +62,14 @@ function RootLayoutNav() {
           options={{ 
             title: "Add Session",
             presentation: "modal",
+            headerBackTitle: "Sessions",
           }} 
         />
         <Stack.Screen 
           name="session/[id]" 
           options={{ 
             title: "Session Details",
+            headerBackTitle: "Sessions",
           }} 
         />
         <Stack.Screen 
@@ -75,6 +77,7 @@ function RootLayoutNav() {
           options={{ 
             title: "Edit Session",
             presentation: "modal",
+            headerBackTitle: "Sessions",
           }} 
         />
         <Stack.Screen 
@@ -82,12 +85,14 @@ function RootLayoutNav() {
           options={{ 
             title: "New Poker Session",
             presentation: "modal",
+            headerBackTitle: "Bankroll",
           }} 
         />
         <Stack.Screen 
           name="bankroll-session/[id]" 
           options={{ 
             title: "Poker Session",
+            headerBackTitle: "Bankroll",
           }} 
         />
       </Stack>

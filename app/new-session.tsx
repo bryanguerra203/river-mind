@@ -449,11 +449,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingTop: 40,
-    paddingBottom: 150,
+    paddingTop: 60,
+    paddingBottom: 200,
   },
   formSection: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 18,
