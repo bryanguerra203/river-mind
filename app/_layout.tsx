@@ -68,7 +68,6 @@ function RootLayoutNav() {
           name="session/[id]" 
           options={{ 
             title: "Session Details",
-            headerBackTitle: "Sessions",
           }} 
         />
         <Stack.Screen 
@@ -89,7 +88,6 @@ function RootLayoutNav() {
           name="bankroll-session/[id]" 
           options={{ 
             title: "Poker Session",
-            headerBackTitle: "Bankroll",
           }} 
         />
       </Stack>

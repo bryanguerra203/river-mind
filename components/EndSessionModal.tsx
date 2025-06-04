@@ -180,8 +180,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: '85%',
-    minHeight: '70%',
+    height: '90%',
+    minHeight: '75%',
   },
   header: {
     padding: 24,

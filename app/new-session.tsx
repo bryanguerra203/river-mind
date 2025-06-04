@@ -38,7 +38,7 @@ export default function NewSessionScreen() {
   const [tags, setTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [allStakes, setAllStakes] = useState<string[]>([]);
-  const [sessionStatus, setSessionStatus] = useState('previous');
+  const [sessionStatus, setSessionStatus] = useState('past');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -81,8 +81,8 @@ export default function NewSessionScreen() {
     
     if (!date) {
       newErrors.date = 'Date is required';
-    } else if (sessionStatus === 'previous') {
-      // Check if date is in the future for previous sessions
+    } else if (sessionStatus === 'past') {
+      // Check if date is in the future for past sessions
       const currentDate = new Date();
       currentDate.setHours(0, 0, 0, 0); // Reset time part for comparison
       const selectedDate = new Date(date);
@@ -101,7 +101,7 @@ export default function NewSessionScreen() {
     if (!buyIn) newErrors.buyIn = 'Buy-in is required';
     else if (isNaN(Number(buyIn))) newErrors.buyIn = 'Must be a number';
     
-    if (sessionStatus === 'previous') {
+    if (sessionStatus === 'past') {
       if (!cashOut) newErrors.cashOut = 'Cash out is required';
       else if (isNaN(Number(cashOut))) newErrors.cashOut = 'Must be a number';
       if (!hours && !minutes) newErrors.duration = 'Duration is required';
@@ -115,7 +115,7 @@ export default function NewSessionScreen() {
   };
   
   const handleSubmit = async () => {
-    if (sessionStatus === 'previous' && !validateForm()) {
+    if (sessionStatus === 'past' && !validateForm()) {
       console.log("Form validation failed:", errors);
       return;
     }
@@ -140,7 +140,7 @@ export default function NewSessionScreen() {
     setIsLoading(true);
     
     try {
-      const duration = sessionStatus === 'previous' ? (Number(hours || 0) * 60) + Number(minutes || 0) : 0;
+      const duration = sessionStatus === 'past' ? (Number(hours || 0) * 60) + Number(minutes || 0) : 0;
       const now = new Date();
       
       const newSession = {
@@ -152,14 +152,14 @@ export default function NewSessionScreen() {
         location,
         stakes,
         buyIn: Number(buyIn),
-        cashOut: sessionStatus === 'previous' ? Number(cashOut) : 0,
+        cashOut: sessionStatus === 'past' ? Number(cashOut) : 0,
         duration,
-        notes: sessionStatus === 'previous' ? notes : '',
-        tags: sessionStatus === 'previous' ? tags : [],
-        status: sessionStatus === 'previous' ? 'past' : 'current' as 'past' | 'current',
+        notes: sessionStatus === 'past' ? notes : '',
+        tags: sessionStatus === 'past' ? tags : [],
+        status: sessionStatus as 'past' | 'current',
         // Add start time for live sessions
         startTime: sessionStatus === 'current' ? now.toISOString() : undefined,
-        endTime: sessionStatus === 'previous' ? now.toISOString() : undefined,
+        endTime: sessionStatus === 'past' ? now.toISOString() : undefined,
       };
       
       console.log("Saving new session with date:", date.toISOString());
@@ -194,7 +194,7 @@ export default function NewSessionScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 140 : 0}
     >
       <ScrollView 
         style={styles.scrollView} 
@@ -323,7 +323,7 @@ export default function NewSessionScreen() {
             leftIcon={<DollarSign size={20} color={colors.text.secondary} />}
           />
           
-          {sessionStatus === 'previous' && (
+          {sessionStatus === 'past' && (
             <>
               <Input
                 label="Cash Out ($)"
@@ -364,7 +364,7 @@ export default function NewSessionScreen() {
           )}
         </View>
         
-        {sessionStatus === 'previous' && (
+        {sessionStatus === 'past' && (
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Notes & Tags</Text>
             
@@ -427,7 +427,7 @@ export default function NewSessionScreen() {
             disabled={isLoading}
           />
           <Button 
-            title={sessionStatus === 'previous' ? "Save Session" : "Start Session"} 
+            title={sessionStatus === 'past' ? "Save Session" : "Start Session"} 
             onPress={handleSubmit} 
             style={styles.saveButton}
             loading={isLoading}
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingTop: 40,
-    paddingBottom: 300,
+    paddingBottom: 150,
   },
   formSection: {
     marginBottom: 24,
