@@ -18,7 +18,7 @@ export const locationTypes = [
 ];
 
 export const sessionStatuses = [
-  { id: 'past', name: 'Past' },
+  { id: 'past', name: 'Previous' },
   { id: 'current', name: 'Live' },
 ];
 
