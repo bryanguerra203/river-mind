@@ -133,7 +133,6 @@ export default function EditSessionScreen() {
   
   const handleSubmit = async () => {
     if (!validateForm()) {
-      console.log("Form validation failed:", errors);
       return;
     }
     
@@ -154,8 +153,6 @@ export default function EditSessionScreen() {
         notes,
         tags,
       };
-      
-      console.log("Updating session with date:", date.toISOString());
       
       // Add a small delay to show the loading state
       await new Promise(resolve => setTimeout(resolve, 500));

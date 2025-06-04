@@ -67,7 +67,6 @@ export const useSessionStore = create<SessionState>()(
             currentAmount: state.bankroll.currentAmount + profit,
             lastUpdated: new Date().toISOString(),
           };
-          console.log("New session added, total sessions:", newSessions.length);
           return { 
             sessions: newSessions,
             stats: newStats,

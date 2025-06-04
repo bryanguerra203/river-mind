@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Share } from 'react-native';
-import { Trash2, Download } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking, Image } from 'react-native';
+import { Trash2, Download, Mail } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
 import * as FileSystem from 'expo-file-system';
@@ -25,6 +25,22 @@ export default function SettingsScreen() {
         }
       ]
     );
+  };
+
+  const handleContactUs = async () => {
+    try {
+      const url = 'mailto:bryanjezguerra@gmail.com';
+      const canOpen = await Linking.canOpenURL(url);
+      
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Could not open email client');
+      }
+    } catch (error) {
+      console.error('Error opening email:', error);
+      Alert.alert('Error', 'Could not open email client');
+    }
   };
 
   const handleExportCSV = async () => {
@@ -109,11 +125,31 @@ export default function SettingsScreen() {
           This will permanently delete all your session data.
         </Text>
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Support</Text>
+        
+        <TouchableOpacity 
+          style={styles.contactButton}
+          onPress={handleContactUs}
+        >
+          <Mail size={20} color={colors.accent.primary} />
+          <Text style={styles.contactButtonText}>Contact Us</Text>
+        </TouchableOpacity>
+        <Text style={styles.contactDescription}>
+          Have questions or feedback? Send us an email.
+        </Text>
+      </View>
       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>Poker Tracker App</Text>
+          <Image 
+            source={require('@/assets/images/icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.infoText}>RiverMind</Text>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </View>
@@ -187,11 +223,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: 16,
   },
+  contactButton: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(33, 150, 243, 0.2)',
+  },
+  contactButtonText: {
+    color: colors.accent.primary,
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  contactDescription: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    paddingHorizontal: 16,
+  },
   infoCard: {
     backgroundColor: colors.background.card,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 12,
   },
   infoText: {
     color: colors.text.primary,

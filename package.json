@@ -1,11 +1,13 @@
 {
-  "name": "expo-app",
+  "name": "rivermind",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
     "start": "bunx rork start -p ns2zy1l0xk6znhf6rw8ir --tunnel",
     "start-web": "bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel",
-    "start-web-dev": "DEBUG=expo* bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel"
+    "start-web-dev": "DEBUG=expo* bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -23,6 +25,7 @@
     "expo-linear-gradient": "~14.1.4",
     "expo-linking": "~7.1.4",
     "expo-location": "~18.1.4",
+    "expo-modules-core": "~2.3.13",
     "expo-print": "~14.1.4",
     "expo-router": "~5.0.3",
     "expo-sharing": "~13.1.5",

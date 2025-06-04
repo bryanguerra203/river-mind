@@ -116,7 +116,6 @@ export default function NewSessionScreen() {
   
   const handleSubmit = async () => {
     if (sessionStatus === 'past' && !validateForm()) {
-      console.log("Form validation failed:", errors);
       return;
     }
     
@@ -161,8 +160,6 @@ export default function NewSessionScreen() {
         startTime: sessionStatus === 'current' ? now.toISOString() : undefined,
         endTime: sessionStatus === 'past' ? now.toISOString() : undefined,
       };
-      
-      console.log("Saving new session with date:", date.toISOString());
       
       // Add the session to the store
       addSession(newSession);
