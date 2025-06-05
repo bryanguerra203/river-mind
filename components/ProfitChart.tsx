@@ -116,19 +116,20 @@ export default function ProfitChart({ sessions, height = 200 }: ProfitChartProps
   const isPositive = profitData[profitData.length - 1].cumulativeProfit >= 0;
 
   // Format date ranges for display
-  const startDate = profitData[0].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endDate = profitData[profitData.length - 1].date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatDate = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  const startDate = formatDate(profitData[0].date);
+  const endDate = formatDate(profitData[profitData.length - 1].date);
   
-  // For YTD, add year to the start date if it's different from current year
-  const currentYear = new Date().getFullYear();
-  const formattedStartDate = timeRange === 'ytd' && profitData[0].date.getFullYear() !== currentYear
-    ? `${startDate} ${profitData[0].date.getFullYear()}`
+  // For all-time view, show the full date of the first entry on the left
+  const leftLabel = timeRange === 'all' 
+    ? formatDate(profitData[0].date)
     : startDate;
-  
-  // For YTD, add year to the end date if it's different from current year
-  const formattedEndDate = timeRange === 'ytd' && profitData[profitData.length - 1].date.getFullYear() !== currentYear
-    ? `${endDate} ${profitData[profitData.length - 1].date.getFullYear()}`
-    : endDate;
 
   return (
     <View style={[styles.container, { height: height + 40 }]}>
@@ -147,7 +148,7 @@ export default function ProfitChart({ sessions, height = 200 }: ProfitChartProps
       
       <View style={styles.profitHeader}>
         <Text style={styles.timeRangeText}>
-          {timeRange === 'ytd' ? `${currentYear} Year to Date` : 'All Time'}
+          {timeRange === 'ytd' ? `${new Date().getFullYear()} Year to Date` : 'All Time'}
         </Text>
         <Text 
           style={[
@@ -207,8 +208,8 @@ export default function ProfitChart({ sessions, height = 200 }: ProfitChartProps
         <View style={styles.xAxis}>
           {profitData.length > 1 && (
             <>
-              <Text style={styles.axisLabel}>{formattedStartDate}</Text>
-              <Text style={styles.axisLabel}>{formattedEndDate}</Text>
+              <Text style={styles.axisLabel}>{leftLabel}</Text>
+              <Text style={styles.axisLabel}>{endDate}</Text>
             </>
           )}
         </View>

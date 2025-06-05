@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
+import { Session } from '@/types/session';
 import ProfitChart from '@/components/ProfitChart';
 import StatsCard from '@/components/StatsCard';
 import Button from '@/components/Button';
@@ -138,6 +139,20 @@ export default function DashboardScreen() {
             <StatsCard 
               title="Longest Win Streak" 
               value={`${stats.longestWinStreak} sessions`}
+            />
+          </View>
+          <View style={styles.statsRow}>
+            <StatsCard 
+              title="Best Location" 
+              value={findBestLocation(sessions).value}
+              subtitle="Most Profitable Venue"
+              positive={findBestLocation(sessions).isPositive}
+            />
+            <StatsCard 
+              title="Worst Location" 
+              value={findWorstLocation(sessions).value}
+              subtitle="Least Profitable Venue"
+              negative={true}
             />
           </View>
         </View>
@@ -344,4 +359,85 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
   },
+  locationValue: {
+    color: colors.text.primary,
+  },
 });
+
+function calculateGameTypeWinRate(sessions: Session[]): string {
+  const gameTypes: Record<string, { wins: number; total: number }> = {
+    'Cash Game': { wins: 0, total: 0 },
+    'Tournament': { wins: 0, total: 0 },
+    'Sit & Go': { wins: 0, total: 0 }
+  };
+
+  sessions.forEach(session => {
+    const gameType = session.gameType as keyof typeof gameTypes;
+    if (gameType in gameTypes) {
+      gameTypes[gameType].total++;
+      if (session.cashOut > session.buyIn) {
+        gameTypes[gameType].wins++;
+      }
+    }
+  });
+
+  const rates = Object.entries(gameTypes)
+    .filter(([_, stats]) => stats.total > 0)
+    .map(([type, stats]) => ({
+      type,
+      rate: (stats.wins / stats.total) * 100
+    }))
+    .sort((a, b) => b.rate - a.rate);
+
+  if (rates.length === 0) return 'N/A';
+
+  return rates.map(r => `${r.type}: ${Math.round(r.rate)}%`).join('\n');
+}
+
+function findBestLocation(sessions: Session[]): { value: string; isPositive?: boolean } {
+  const locationStats = new Map<string, { profit: number, sessions: number }>();
+
+  sessions.forEach(session => {
+    const current = locationStats.get(session.location) || { profit: 0, sessions: 0 };
+    locationStats.set(session.location, {
+      profit: current.profit + (session.cashOut - session.buyIn),
+      sessions: current.sessions + 1
+    });
+  });
+
+  const locations = Array.from(locationStats.entries())
+    .filter(([_, stats]) => stats.sessions >= 3) // Only consider locations with 3+ sessions
+    .sort(([_, a], [__, b]) => b.profit - a.profit);
+
+  if (locations.length === 0) return { value: 'N/A' };
+
+  const [bestLocation, stats] = locations[0];
+  return {
+    value: `${bestLocation}\n${formatCurrency(stats.profit)}`,
+    isPositive: stats.profit > 0
+  };
+}
+
+function findWorstLocation(sessions: Session[]): { value: string; isPositive?: boolean } {
+  const locationStats = new Map<string, { profit: number, sessions: number }>();
+
+  sessions.forEach(session => {
+    const current = locationStats.get(session.location) || { profit: 0, sessions: 0 };
+    locationStats.set(session.location, {
+      profit: current.profit + (session.cashOut - session.buyIn),
+      sessions: current.sessions + 1
+    });
+  });
+
+  const locations = Array.from(locationStats.entries())
+    .filter(([_, stats]) => stats.sessions >= 3) // Only consider locations with 3+ sessions
+    .sort(([_, a], [__, b]) => a.profit - b.profit); // Sort by ascending profit (worst first)
+
+  if (locations.length === 0) return { value: 'N/A' };
+
+  const [worstLocation, stats] = locations[0];
+  return {
+    value: `${worstLocation}\n${formatCurrency(stats.profit)}`,
+    isPositive: stats.profit > 0
+  };
+}

@@ -7,7 +7,8 @@
     "start-web": "bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel",
     "start-web-dev": "DEBUG=expo* bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "load-test": "npx ts-node --project scripts/tsconfig.json -r tsconfig-paths/register scripts/loadTest.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -41,6 +42,7 @@
     "react-native": "0.79.1",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-html-to-pdf": "^0.12.0",
+    "react-native-performance-monitor": "^2.0.0",
     "react-native-safe-area-context": "5.3.0",
     "react-native-screens": "~4.10.0",
     "react-native-svg": "15.11.2",
@@ -52,6 +54,8 @@
     "@babel/core": "^7.25.2",
     "@expo/ngrok": "^4.1.0",
     "@types/react": "~19.0.10",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "~5.8.3"
   },
   "private": true

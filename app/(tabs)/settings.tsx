@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking, Image, ScrollView } from 'react-native';
 import { Trash2, Download, Mail } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
@@ -43,11 +43,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleExportCSV = async () => {
+  const filterSessionsYTD = () => {
+    const currentYear = new Date().getFullYear();
+    return sessions.filter(session => new Date(session.date).getFullYear() === currentYear);
+  };
+
+  const handleExportCSV = async (sessionsToExport: typeof sessions) => {
     try {
       // Create CSV header
       const headers = [
-        'Date',
+        'Day',
+        'Year',
         'Game Type',
         'Session Type',
         'Location',
@@ -61,7 +67,7 @@ export default function SettingsScreen() {
       ].join(',');
 
       // Convert sessions to CSV rows
-      const rows = sessions.map(session => [
+      const rows = sessionsToExport.map(session => [
         formatDate(session.date),
         session.gameType,
         session.sessionType,
@@ -85,7 +91,7 @@ export default function SettingsScreen() {
       await Share.share({
         url: fileUri,
         title: 'Poker Sessions Export',
-        message: 'Here is my poker sessions data export.'
+        message: `Here is my poker sessions data export (${sessionsToExport.length} sessions).`
       });
 
     } catch (error) {
@@ -95,7 +101,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -103,42 +109,63 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data Management</Text>
         
-        <TouchableOpacity 
-          style={styles.exportButton}
-          onPress={handleExportCSV}
-        >
-          <Download size={20} color={colors.accent.primary} />
-          <Text style={styles.exportButtonText}>Export Sessions as CSV</Text>
-        </TouchableOpacity>
-        <Text style={styles.exportDescription}>
-          Export all your session data as a CSV file.
-        </Text>
+        <View style={styles.exportButtons}>
+          <View style={styles.exportOption}>
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={() => handleExportCSV(sessions)}
+            >
+              <Download size={20} color={colors.accent.primary} />
+              <Text style={styles.exportButtonText}>Export All Sessions</Text>
+            </TouchableOpacity>
+            <Text style={styles.exportDescription}>
+              Download a CSV file containing all your poker sessions.
+            </Text>
+          </View>
 
-        <TouchableOpacity 
-          style={styles.dangerButton}
-          onPress={handleClearAllSessions}
-        >
-          <Trash2 size={20} color={colors.accent.danger} />
-          <Text style={styles.dangerButtonText}>Clear All Sessions</Text>
-        </TouchableOpacity>
-        <Text style={styles.dangerDescription}>
-          This will permanently delete all your session data.
-        </Text>
+          <View style={styles.exportOption}>
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={() => handleExportCSV(filterSessionsYTD())}
+            >
+              <Download size={20} color={colors.accent.primary} />
+              <Text style={styles.exportButtonText}>Export YTD Sessions</Text>
+            </TouchableOpacity>
+            <Text style={styles.exportDescription}>
+              Download a CSV file containing your sessions from {new Date().getFullYear()}.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.dangerSection}>
+          <TouchableOpacity 
+            style={styles.dangerButton}
+            onPress={handleClearAllSessions}
+          >
+            <Trash2 size={20} color={colors.accent.danger} />
+            <Text style={styles.dangerButtonText}>Clear All Sessions</Text>
+          </TouchableOpacity>
+          <Text style={styles.dangerDescription}>
+            Permanently delete all your session data. This action cannot be undone.
+          </Text>
+        </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         
-        <TouchableOpacity 
-          style={styles.contactButton}
-          onPress={handleContactUs}
-        >
-          <Mail size={20} color={colors.accent.primary} />
-          <Text style={styles.contactButtonText}>Contact Us</Text>
-        </TouchableOpacity>
-        <Text style={styles.contactDescription}>
-          Have questions or feedback? Send us an email.
-        </Text>
+        <View style={styles.supportOption}>
+          <TouchableOpacity 
+            style={styles.contactButton}
+            onPress={handleContactUs}
+          >
+            <Mail size={20} color={colors.accent.primary} />
+            <Text style={styles.contactButtonText}>Contact Us</Text>
+          </TouchableOpacity>
+          <Text style={styles.contactDescription}>
+            Have questions or feedback? Send us an email and we'll get back to you.
+          </Text>
+        </View>
       </View>
       
       <View style={styles.section}>
@@ -153,7 +180,7 @@ export default function SettingsScreen() {
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -161,6 +188,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  contentContainer: {
     padding: 16,
   },
   header: {
@@ -172,7 +201,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 18,
@@ -180,13 +209,18 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: 16,
   },
+  exportButtons: {
+    gap: 20,
+  },
+  exportOption: {
+    marginBottom: 4,
+  },
   exportButton: {
     backgroundColor: 'rgba(33, 150, 243, 0.1)',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(33, 150, 243, 0.2)',
   },
@@ -199,8 +233,12 @@ const styles = StyleSheet.create({
   exportDescription: {
     color: colors.text.secondary,
     fontSize: 14,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    marginTop: 8,
+    marginLeft: 4,
+    lineHeight: 20,
+  },
+  dangerSection: {
+    marginTop: 24,
   },
   dangerButton: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -208,7 +246,6 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.2)',
   },
@@ -221,7 +258,12 @@ const styles = StyleSheet.create({
   dangerDescription: {
     color: colors.text.secondary,
     fontSize: 14,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginLeft: 4,
+    lineHeight: 20,
+  },
+  supportOption: {
+    marginBottom: 4,
   },
   contactButton: {
     backgroundColor: 'rgba(33, 150, 243, 0.1)',
@@ -229,7 +271,6 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(33, 150, 243, 0.2)',
   },
@@ -242,22 +283,27 @@ const styles = StyleSheet.create({
   contactDescription: {
     color: colors.text.secondary,
     fontSize: 14,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginLeft: 4,
+    lineHeight: 20,
   },
   infoCard: {
     backgroundColor: colors.background.card,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 12,
+    padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   infoText: {
     color: colors.text.primary,
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 4,
   },
   versionText: {

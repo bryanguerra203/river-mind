@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Calendar, Clock, DollarSign } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
@@ -15,6 +15,26 @@ export default function SessionCard({ session }: SessionCardProps) {
   const profit = session.cashOut - session.buyIn;
   const isProfit = profit > 0;
   const isActive = session.status === 'current';
+  const blinkAnim = new Animated.Value(1);
+  
+  useEffect(() => {
+    if (isActive) {
+      const blink = Animated.sequence([
+        Animated.timing(blinkAnim, {
+          toValue: 0.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(blinkAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]);
+      
+      Animated.loop(blink).start();
+    }
+  }, [isActive]);
   
   const handlePress = () => {
     router.push(`/session/${session.id}`);
@@ -39,6 +59,15 @@ export default function SessionCard({ session }: SessionCardProps) {
       return `${hours}h ${mins}m`;
     }
   };
+
+  // Format time to HH:mm AM/PM
+  const formatTime = (date: string) => {
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
   
   return (
     <Pressable 
@@ -60,7 +89,15 @@ export default function SessionCard({ session }: SessionCardProps) {
           </Text>
         )}
         {isActive && (
-          <Text style={styles.activeLabel}>Live</Text>
+          <View style={styles.liveContainer}>
+            <Animated.View 
+              style={[
+                styles.blinkDot,
+                { opacity: blinkAnim }
+              ]} 
+            />
+            <Text style={styles.activeLabel}>Live</Text>
+          </View>
         )}
       </View>
       
@@ -83,6 +120,13 @@ export default function SessionCard({ session }: SessionCardProps) {
           <DollarSign size={16} color={colors.text.secondary} />
           <Text style={styles.detailText}>{session.stakes}</Text>
         </View>
+
+        {isActive && (
+          <View style={styles.detailRow}>
+            <Clock size={16} color={colors.text.secondary} />
+            <Text style={styles.detailText}>Session Start: {formatTime(session.date)}</Text>
+          </View>
+        )}
       </View>
       
       <View style={styles.footer}>
@@ -113,7 +157,7 @@ const styles = StyleSheet.create({
   },
   activeContainer: {
     borderLeftWidth: 4,
-    borderLeftColor: colors.accent.warning, // Changed from secondary to warning (yellow)
+    borderLeftColor: colors.accent.warning,
     backgroundColor: colors.background.card,
   },
   header: {
@@ -137,10 +181,15 @@ const styles = StyleSheet.create({
   negative: {
     color: colors.accent.danger,
   },
+  liveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   activeLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.accent.warning, // Changed from secondary to warning (yellow)
+    color: colors.accent.warning,
   },
   details: {
     marginBottom: 12,
@@ -182,5 +231,11 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     fontSize: 12,
     marginLeft: 6,
+  },
+  blinkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent.warning,
   },
 });
