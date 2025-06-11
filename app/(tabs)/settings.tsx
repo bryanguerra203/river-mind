@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking, Image, ScrollView } from 'react-native';
-import { Trash2, Download, Mail } from 'lucide-react-native';
+import { Trash2, Download, Mail, LogOut } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
 import * as FileSystem from 'expo-file-system';
 import { formatDate, formatTimeOnly } from '@/utils/formatters';
+import { supabase } from '@/lib/supabase';
+import { router } from 'expo-router';
 
 export default function SettingsScreen() {
   const { clearAllSessions, sessions } = useSessionStore();
@@ -17,9 +19,17 @@ export default function SettingsScreen() {
         { text: "Cancel", style: "cancel" },
         { 
           text: "Delete", 
-          onPress: () => {
-            clearAllSessions();
-            Alert.alert("Success", "All sessions have been cleared.");
+          onPress: async () => {
+            try {
+              await clearAllSessions();
+              Alert.alert("Success", "All sessions have been cleared.");
+            } catch (error: any) {
+              console.error('Error clearing sessions:', error);
+              Alert.alert(
+                "Error",
+                "Failed to clear sessions. Please try again."
+              );
+            }
           }, 
           style: "destructive" 
         }
@@ -41,6 +51,39 @@ export default function SettingsScreen() {
       console.error('Error opening email:', error);
       Alert.alert('Error', 'Could not open email client');
     }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Clear the session store first
+              useSessionStore.getState().clearStore();
+              
+              // Then sign out from Supabase
+              const { error } = await supabase.auth.signOut();
+              if (error) throw error;
+
+              // Navigate to login screen
+              router.replace('/login');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const filterSessionsYTD = () => {
@@ -166,6 +209,19 @@ export default function SettingsScreen() {
             Have questions or feedback? Send us an email and we'll get back to you.
           </Text>
         </View>
+
+        <View style={styles.supportOption}>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <LogOut size={20} color={colors.accent.danger} />
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+          <Text style={styles.logoutDescription}>
+            Sign out of your account. You can log back in at any time.
+          </Text>
+        </View>
       </View>
       
       <View style={styles.section}>
@@ -281,6 +337,28 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   contactDescription: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    marginTop: 8,
+    marginLeft: 4,
+    lineHeight: 20,
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  logoutButtonText: {
+    color: colors.accent.danger,
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  logoutDescription: {
     color: colors.text.secondary,
     fontSize: 14,
     marginTop: 8,

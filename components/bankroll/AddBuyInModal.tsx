@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderRadius: 16,
     padding: 24,
+    paddingBottom: 40,
     width: '90%',
     maxWidth: 400,
   },

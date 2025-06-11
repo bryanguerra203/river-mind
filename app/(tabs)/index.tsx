@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
@@ -11,11 +11,12 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SessionCard from '@/components/SessionCard';
 import { formatCurrency, formatHourlyRate, formatDuration } from '@/utils/formatters';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { sessions, stats, bankroll, initializeStats, updateBankroll } = useSessionStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const { sessions, stats, bankroll, initializeStats, updateBankroll, isLoading } = useSessionStore();
+  const isOnline = useNetworkStatus();
   const [bankrollModalVisible, setBankrollModalVisible] = useState(false);
   const [newBankroll, setNewBankroll] = useState(bankroll.currentAmount.toString());
   
@@ -25,12 +26,6 @@ export default function DashboardScreen() {
   useEffect(() => {
     // Initialize stats from stored sessions
     initializeStats();
-    
-    // Simulate a small delay to show loading state
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
   }, [initializeStats]);
 
   const handleAddSession = () => {
@@ -49,7 +44,10 @@ export default function DashboardScreen() {
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading stats...</Text>
+          <ActivityIndicator size="large" color={colors.accent.primary} />
+          <Text style={styles.loadingText}>
+            {isOnline ? 'Syncing with server...' : 'Loading...'}
+          </Text>
         </View>
       );
     }
@@ -405,9 +403,13 @@ function findBestLocation(sessions: Session[]): { value: string; isPositive?: bo
     });
   });
 
+  console.log('Location stats:', Object.fromEntries(locationStats));
+
   const locations = Array.from(locationStats.entries())
-    .filter(([_, stats]) => stats.sessions >= 3) // Only consider locations with 3+ sessions
+    .filter(([_, stats]) => stats.sessions >= 1) // Changed from 3 to 1 to include all locations
     .sort(([_, a], [__, b]) => b.profit - a.profit);
+
+  console.log('Sorted locations:', locations);
 
   if (locations.length === 0) return { value: 'N/A' };
 
@@ -429,9 +431,13 @@ function findWorstLocation(sessions: Session[]): { value: string; isPositive?: b
     });
   });
 
+  console.log('Location stats for worst:', Object.fromEntries(locationStats));
+
   const locations = Array.from(locationStats.entries())
-    .filter(([_, stats]) => stats.sessions >= 3) // Only consider locations with 3+ sessions
+    .filter(([_, stats]) => stats.sessions >= 1) // Changed from 3 to 1 to include all locations
     .sort(([_, a], [__, b]) => a.profit - b.profit); // Sort by ascending profit (worst first)
+
+  console.log('Sorted locations for worst:', locations);
 
   if (locations.length === 0) return { value: 'N/A' };
 

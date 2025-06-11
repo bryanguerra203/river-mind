@@ -11,6 +11,7 @@ import SessionCard from '@/components/SessionCard';
 import Button from '@/components/Button';
 import SegmentedControl from '@/components/SegmentedControl';
 import { trackScreenRender, trackListPerformance, trackFunctionExecution } from '@/utils/performance';
+import { gameTypes } from '@/constants/gameTypes';
 
 export default function SessionsScreen() {
   const router = useRouter();
@@ -56,25 +57,32 @@ export default function SessionsScreen() {
   };
 
   const handleFilterChange = (key: string, value: string | string[]) => {
-    setTempFilters({ ...tempFilters, [key]: value });
+    console.log('Filter change:', key, value); // Debug log
+    setTempFilters(prev => {
+      const newFilters = { ...prev, [key]: value };
+      console.log('New filters:', newFilters); // Debug log
+      return newFilters;
+    });
   };
 
   const handleApplyFilters = async () => {
+    console.log('Applying filters:', tempFilters); // Debug log
     const filterTracker = trackFunctionExecution('handleApplyFilters');
     setIsSorting(true);
     setFilters(tempFilters);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 100));
     setIsSorting(false);
     setShowFilters(false);
     filterTracker.end();
   };
 
   const handleClearFilters = () => {
+    console.log('Clearing filters'); // Debug log
     const clearedFilters = {
       gameType: [] as string[],
       sessionType: [] as string[],
       locationType: [] as string[],
-      tags: [],
+      tags: [] as string[],
       year: '',
       month: '',
       profitStatus: '',
@@ -93,10 +101,50 @@ export default function SessionsScreen() {
   };
 
   const filteredSessions = sessions.filter(session => {
-    if (filters.gameType.length > 0 && !filters.gameType.includes(session.gameType)) return false;
-    if (filters.sessionType.length > 0 && !filters.sessionType.includes(session.sessionType)) return false;
-    if (filters.locationType.length > 0 && !filters.locationType.includes(session.locationType)) return false;
-    if (filters.tags.length > 0 && !filters.tags.every(tag => session.tags.includes(tag))) return false;
+    // Game Type filter
+    if (filters.gameType.length > 0) {
+      const hasGameType = filters.gameType.some(type => type === session.gameType);
+      if (!hasGameType) return false;
+    }
+
+    // Session Type filter
+    if (filters.sessionType.length > 0) {
+      const hasSessionType = filters.sessionType.some(type => type === session.sessionType);
+      if (!hasSessionType) return false;
+    }
+
+    // Location Type filter
+    if (filters.locationType.length > 0) {
+      const hasLocationType = filters.locationType.some(type => type === session.locationType);
+      if (!hasLocationType) return false;
+    }
+
+    // Tags filter
+    if (filters.tags.length > 0) {
+      const hasAllTags = filters.tags.every(tag => session.tags?.includes(tag));
+      if (!hasAllTags) return false;
+    }
+
+    // Year filter
+    if (filters.year) {
+      const sessionYear = new Date(session.date).getFullYear().toString();
+      if (sessionYear !== filters.year) return false;
+    }
+
+    // Month filter
+    if (filters.month) {
+      const sessionMonth = new Date(session.date).getMonth() + 1;
+      const filterMonth = parseInt(filters.month, 10);
+      if (sessionMonth !== filterMonth) return false;
+    }
+
+    // Profit Status filter
+    if (filters.profitStatus) {
+      const profit = session.cashOut - session.buyIn;
+      if (filters.profitStatus === 'profit' && profit <= 0) return false;
+      if (filters.profitStatus === 'loss' && profit >= 0) return false;
+    }
+
     return true;
   });
 
@@ -105,14 +153,11 @@ export default function SessionsScreen() {
       const profitA = a.cashOut - a.buyIn;
       const profitB = b.cashOut - b.buyIn;
       return sortDirection === 'desc' ? profitB - profitA : profitA - profitB;
-    }
-    try {
+    } else {
+      // Sort by date
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
-    } catch (e) {
-      console.error("Error sorting by date:", e);
-      return 0;
     }
   });
 
@@ -120,7 +165,7 @@ export default function SessionsScreen() {
     const sortTracker = trackFunctionExecution('handleSortChange');
     setIsSorting(true);
     setSortBy(value as 'date' | 'profit');
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
     setIsSorting(false);
     sortTracker.end();
   };
@@ -129,9 +174,17 @@ export default function SessionsScreen() {
     const sortTracker = trackFunctionExecution('handleSortDirectionChange');
     setIsSorting(true);
     setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc');
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
     setIsSorting(false);
     sortTracker.end();
+  };
+
+  const getAllUniqueTags = () => {
+    const tagSet = new Set<string>();
+    sessions.forEach(session => {
+      session.tags?.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
   };
 
   const renderFilterModal = () => (
@@ -163,10 +216,18 @@ export default function SessionsScreen() {
                   ].map(status => (
                     <TouchableOpacity
                       key={status.value}
-                      style={[styles.profitStatusButton, tempFilters.profitStatus === status.value && styles.profitStatusButtonActive]}
+                      style={[
+                        styles.profitStatusButton,
+                        tempFilters.profitStatus === status.value && styles.profitStatusButtonActive
+                      ]}
                       onPress={() => handleFilterChange('profitStatus', status.value)}
                     >
-                      <Text style={[styles.profitStatusButtonText, tempFilters.profitStatus === status.value && styles.profitStatusButtonTextActive]}>{status.label}</Text>
+                      <Text style={[
+                        styles.profitStatusButtonText,
+                        tempFilters.profitStatus === status.value && styles.profitStatusButtonTextActive
+                      ]}>
+                        {status.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -216,10 +277,18 @@ export default function SessionsScreen() {
                     ].map(month => (
                       <TouchableOpacity
                         key={month.value}
-                        style={[styles.monthButton, tempFilters.month === month.value && styles.monthButtonActive]}
+                        style={[
+                          styles.monthButton,
+                          tempFilters.month === month.value && styles.monthButtonActive
+                        ]}
                         onPress={() => handleFilterChange('month', month.value)}
                       >
-                        <Text style={[styles.monthButtonText, tempFilters.month === month.value && styles.monthButtonTextActive]}>{month.label}</Text>
+                        <Text style={[
+                          styles.monthButtonText,
+                          tempFilters.month === month.value && styles.monthButtonTextActive
+                        ]}>
+                          {month.label}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -232,24 +301,26 @@ export default function SessionsScreen() {
               <View style={styles.filterGroup}>
                 <Text style={styles.filterLabel}>Game Type</Text>
                 <View style={styles.gameTypeContainer}>
-                  {[
-                    { label: 'All', value: '' },
-                    { label: 'Hold\'em', value: 'Hold\'em' },
-                    { label: 'Omaha', value: 'Omaha' },
-                    { label: 'PLO', value: 'PLO' },
-                    { label: 'Mixed', value: 'Mixed' }
-                  ].map(type => (
+                  {gameTypes.map(type => (
                     <TouchableOpacity
-                      key={type.value}
-                      style={[styles.gameTypeButton, tempFilters.gameType.includes(type.value) && styles.gameTypeButtonActive]}
+                      key={type.id}
+                      style={[
+                        styles.gameTypeButton,
+                        tempFilters.gameType.includes(type.id) && styles.gameTypeButtonActive
+                      ]}
                       onPress={() => {
-                        const newTypes = tempFilters.gameType.includes(type.value)
-                          ? tempFilters.gameType.filter(t => t !== type.value)
-                          : [...tempFilters.gameType, type.value];
+                        const newTypes = tempFilters.gameType.includes(type.id)
+                          ? tempFilters.gameType.filter(t => t !== type.id)
+                          : [...tempFilters.gameType, type.id];
                         handleFilterChange('gameType', newTypes);
                       }}
                     >
-                      <Text style={[styles.gameTypeButtonText, tempFilters.gameType.includes(type.value) && styles.gameTypeButtonTextActive]}>{type.label}</Text>
+                      <Text style={[
+                        styles.gameTypeButtonText,
+                        tempFilters.gameType.includes(type.id) && styles.gameTypeButtonTextActive
+                      ]}>
+                        {type.name}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -309,10 +380,13 @@ export default function SessionsScreen() {
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Tags</Text>
               <View style={styles.tagsContainer}>
-                {['deep stack', 'short stack', 'rush', 'grind', 'final table', 'bubble', 'satellite'].map(tag => (
+                {getAllUniqueTags().map(tag => (
                   <TouchableOpacity
                     key={tag}
-                    style={[styles.tagButton, tempFilters.tags.includes(tag) && styles.tagButtonActive]}
+                    style={[
+                      styles.tagButton,
+                      tempFilters.tags.includes(tag) && styles.tagButtonActive
+                    ]}
                     onPress={() => {
                       const newTags = tempFilters.tags.includes(tag)
                         ? tempFilters.tags.filter(t => t !== tag)
@@ -320,7 +394,12 @@ export default function SessionsScreen() {
                       handleFilterChange('tags', newTags);
                     }}
                   >
-                    <Text style={[styles.tagText, tempFilters.tags.includes(tag) && styles.tagTextActive]}>{tag}</Text>
+                    <Text style={[
+                      styles.tagText,
+                      tempFilters.tags.includes(tag) && styles.tagTextActive
+                    ]}>
+                      {tag}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -519,6 +598,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
+    paddingBottom: 40,
   },
   modalHeader: {
     flexDirection: 'row',
