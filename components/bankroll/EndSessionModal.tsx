@@ -34,7 +34,7 @@ export default function EndSessionModal({
   const [isLoading, setIsLoading] = useState(false);
   
   // Check if there are players who haven't cashed out
-  const uncashedPlayers = session.players?.filter(p => p.totalCashOut === 0) || [];
+  const uncashedPlayers = session.players?.filter(p => p.cashOuts.length === 0) || [];
   
   const handleSubmit = async () => {
     setIsLoading(true);

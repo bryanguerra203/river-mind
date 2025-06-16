@@ -49,7 +49,7 @@ export default function EditCashOutModal({
     if (!player || !cashOut) return;
     
     // Validate form
-    const cashOutAmount = Number(amount);
+    const cashOutAmount = Number(amount.replace(/,/g, ''));
     if (isNaN(cashOutAmount) || cashOutAmount < 0) {
       setError('Please enter a valid amount');
       return;
@@ -86,11 +86,13 @@ export default function EditCashOutModal({
     
     // Ensure only one decimal point
     const parts = cleanedText.split('.');
-    const formattedText = parts.length > 1 
-      ? `${parts[0]}.${parts.slice(1).join('')}`
-      : cleanedText;
+    const wholeNumber = parts[0];
+    const decimal = parts.length > 1 ? `.${parts.slice(1).join('')}` : '';
     
-    setAmount(formattedText);
+    // Add commas to the whole number part
+    const formattedWholeNumber = wholeNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    setAmount(formattedWholeNumber + decimal);
     setError('');
   };
   

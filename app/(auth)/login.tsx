@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
@@ -42,74 +42,117 @@ export default function LoginScreen() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <Image 
-          source={require('../../assets/images/logo.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.title}>RiverMind</Text>
-        
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={colors.text.secondary}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-        </View>
+  const handleForgotPassword = async () => {
+    Alert.prompt(
+      'Reset Password',
+      'Enter your email to receive a password reset link:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async (enteredEmail) => {
+            if (!enteredEmail) {
+              Alert.alert('Error', 'Please enter your email address.');
+              return;
+            }
+            try {
+              const { error } = await supabase.auth.resetPasswordForEmail(enteredEmail, {
+                redirectTo: 'rivermind://reset-password', // <--- IMPORTANT: Use your custom scheme here
+              });
 
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={colors.text.secondary}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+              if (error) throw error;
+
+              Alert.alert('Success', 'Password reset link sent to your email!');
+            } catch (error: any) {
+              console.error('Password reset error:', error);
+              Alert.alert('Error', error.message || 'Failed to send reset link.');
+            }
+          },
+        },
+      ],
+      'plain-text', // Input type
+      email // Pre-fill with current email if available
+    );
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          <Image 
+            source={require('../../assets/images/logo.png')} 
+            style={styles.logo}
+            resizeMode="contain"
           />
-          <TouchableOpacity 
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIcon}
-          >
-            <Ionicons 
-              name={showPassword ? "eye-off-outline" : "eye-outline"} 
-              size={20} 
-              color={colors.text.secondary} 
+          <Text style={styles.title}>RiverMind</Text>
+          
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={colors.text.secondary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={colors.text.secondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons 
+                name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                size={20} 
+                color={colors.text.secondary} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity 
+            onPress={handleForgotPassword}
+            style={styles.forgotPasswordLink}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Logging in...' : 'Login'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => router.push('/signup')}
+            style={styles.signupLink}
+          >
+            <Text style={styles.signupText}>
+              Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
+            </Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Logging in...' : 'Login'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          onPress={() => router.push('/signup')}
-          style={styles.signupLink}
-        >
-          <Text style={styles.signupText}>
-            Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -185,6 +228,16 @@ const styles = StyleSheet.create({
   },
   signupTextBold: {
     color: colors.accent.primary,
+    fontWeight: '600',
+  },
+  forgotPasswordLink: {
+    marginTop: -8,
+    marginBottom: 16,
+    alignSelf: 'flex-end',
+  },
+  forgotPasswordText: {
+    color: colors.accent.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
 }); 

@@ -40,7 +40,7 @@ export default function AddBuyInModal({
     if (!player) return;
     
     // Validate form
-    const buyInAmount = Number(amount);
+    const buyInAmount = Number(amount.replace(/,/g, ''));
     if (isNaN(buyInAmount) || buyInAmount <= 0) {
       setError('Please enter a valid amount');
       return;
@@ -50,7 +50,10 @@ export default function AddBuyInModal({
     
     try {
       // Add buy-in to the player
-      addBuyIn(sessionId, player.id, buyInAmount);
+      await addBuyIn(player.id, {
+        amount: buyInAmount,
+        timestamp: new Date().toISOString()
+      });
       
       // Reset form and close modal
       setAmount('');
@@ -76,11 +79,13 @@ export default function AddBuyInModal({
     
     // Ensure only one decimal point
     const parts = cleanedText.split('.');
-    const formattedText = parts.length > 1 
-      ? `${parts[0]}.${parts.slice(1).join('')}`
-      : cleanedText;
+    const wholeNumber = parts[0];
+    const decimal = parts.length > 1 ? `.${parts.slice(1).join('')}` : '';
     
-    setAmount(formattedText);
+    // Add commas to the whole number part
+    const formattedWholeNumber = wholeNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    setAmount(formattedWholeNumber + decimal);
     setError('');
   };
   

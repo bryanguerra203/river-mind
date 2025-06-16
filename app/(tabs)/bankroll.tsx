@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity,
   Alert,
-  Pressable
+  Pressable,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -28,10 +29,16 @@ export default function BankrollScreen() {
   const { 
     activeSessions, 
     historySessions,
-    deleteSession
+    deleteSession,
+    loadSessions,
+    isLoading
   } = useBankrollStore();
   
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    loadSessions();
+  }, []);
   
   const handleCreateSession = () => {
     router.push('/new-bankroll-session');
@@ -77,6 +84,15 @@ export default function BankrollScreen() {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
   
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.accent.primary} />
+        <Text style={styles.loadingText}>Loading your poker games...</Text>
+      </View>
+    );
+  }
+  
   if (activeSessions.length === 0 && historySessions.length === 0) {
     return <EmptyBankroll onCreateSession={handleCreateSession} />;
   }
@@ -91,7 +107,6 @@ export default function BankrollScreen() {
         <TouchableOpacity 
           style={styles.sessionCard}
           onPress={() => handleViewSession(session.id)}
-          activeOpacity={0.7}
         >
           <View style={styles.sessionHeader}>
             <Text style={styles.sessionLocation}>{session.location}</Text>
@@ -109,29 +124,25 @@ export default function BankrollScreen() {
                 <TouchableOpacity
                   style={styles.menuButton}
                   onPress={(e) => toggleSessionMenu(session.id, e)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <MoreVertical size={20} color={colors.text.secondary} />
                 </TouchableOpacity>
                 
                 {isMenuOpen && (
-                  <Pressable 
-                    style={styles.menuOverlay}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setOpenMenuId(null);
-                    }}
-                  >
-                    <View style={styles.menuDropdown}>
-                      <TouchableOpacity 
+                  <>
+                    <Pressable style={styles.menuOverlay} onPress={closeAllMenus} />
+                    <View style={styles.menu}>
+                      <TouchableOpacity
                         style={styles.menuItem}
                         onPress={(e) => handleDeleteSession(session, e)}
                       >
                         <Trash2 size={16} color={colors.accent.danger} />
-                        <Text style={styles.menuItemTextDelete}>Delete Session</Text>
+                        <Text style={[styles.menuItemText, styles.deleteText]}>
+                          Delete Session
+                        </Text>
                       </TouchableOpacity>
                     </View>
-                  </Pressable>
+                  </>
                 )}
               </View>
             </View>
@@ -198,6 +209,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
@@ -293,32 +316,37 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 2,
   },
-  menuDropdown: {
+  menu: {
     position: 'absolute',
-    top: 32,
+    top: 40,
     right: 0,
     backgroundColor: colors.background.card,
     borderRadius: 8,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 10,
+    padding: 8,
     width: 160,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 3,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 4,
+    padding: 8,
+    width: '100%',
   },
-  menuItemTextDelete: {
-    color: colors.accent.danger,
+  menuItemText: {
     marginLeft: 8,
     fontSize: 14,
-    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  deleteText: {
+    color: colors.accent.danger,
   },
   sessionDetails: {
     flexDirection: 'row',
@@ -331,8 +359,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   detailText: {
-    color: colors.text.secondary,
-    marginLeft: 6,
+    marginLeft: 4,
     fontSize: 14,
+    color: colors.text.secondary,
   },
 });

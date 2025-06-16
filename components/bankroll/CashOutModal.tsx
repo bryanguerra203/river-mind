@@ -57,7 +57,11 @@ export default function CashOutModal({
     
     try {
       // Cash out the player
-      addCashOut(sessionId, player.id, cashOutAmount);
+      await addCashOut(sessionId, {
+        playerId: player.id,
+        amount: cashOutAmount,
+        timestamp: new Date().toISOString()
+      });
       
       // Reset form and close modal
       setAmount('');

@@ -8,6 +8,9 @@ import { colors } from "@/constants/colors";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSessionStore } from '@/store/sessionStore';
 import { supabase } from '@/lib/supabase';
+import { View, ActivityIndicator, Text, StyleSheet, Modal } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Session } from '@supabase/supabase-js';
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -23,9 +26,10 @@ export default function RootLayout() {
 
   const isOnline = useNetworkStatus();
   const { syncWithServer } = useSessionStore();
-  const segments = useSegments();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const [session, setSession] = useState<Session | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     if (error) {
@@ -41,113 +45,135 @@ export default function RootLayout() {
   }, [loaded]);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
+    const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // If we're not in the auth group and there's no session, redirect to login
-        if (!segments[0]?.includes('(auth)') && !session) {
-          router.replace('/login');
-        }
-        // If we're in the auth group and there is a session, redirect to home
-        else if (segments[0]?.includes('(auth)') && session) {
-          router.replace('/(tabs)');
-        }
-      } catch (error) {
-        console.error('Error checking auth status:', error);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+      } catch (e) {
+        console.error("Error getting session on startup:", e);
       } finally {
-        setIsLoading(false);
+        setInitialLoading(false);
       }
     };
 
-    checkAuth();
+    checkSession();
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.replace('/login');
-      } else if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)');
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [segments]);
+  }, []);
 
   useEffect(() => {
-    if (isOnline) {
+    if (isOnline && session) {
       syncWithServer();
     }
-  }, [isOnline]);
+  }, [isOnline, session, syncWithServer]);
 
-  if (isLoading) {
-    return null; // Or a loading spinner if you prefer
+  if (initialLoading || !loaded) {
+    return (
+      <Modal
+        visible={true}
+        transparent={true}
+        animationType="fade"
+      >
+        <BlurView intensity={20} style={styles.loadingOverlay}>
+          <View style={styles.loadingContent}>
+            <ActivityIndicator size="large" color={colors.accent.primary} />
+            <Text style={styles.loadingText}>Loading...</Text>
+          </View>
+        </BlurView>
+      </Modal>
+    );
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
   return (
     <>
       <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.background.primary,
-          },
-          headerTintColor: colors.text.primary,
-          headerTitleStyle: {
-            fontWeight: '600',
-          },
-          contentStyle: {
-            backgroundColor: colors.background.primary,
-          },
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="new-session" 
-          options={{ 
-            title: "Add Session",
-            presentation: "modal",
-            headerBackTitle: "Sessions",
-          }} 
-        />
-        <Stack.Screen 
-          name="session/[id]" 
-          options={{ 
-            title: "Session Details",
-            headerBackTitle: "Sessions",
-          }} 
-        />
-        <Stack.Screen 
-          name="edit-session/[id]" 
-          options={{ 
-            title: "Edit Session",
-            presentation: "modal",
-            headerBackTitle: "Sessions",
-          }} 
-        />
-        <Stack.Screen 
-          name="new-bankroll-session" 
-          options={{ 
-            title: "New Poker Session",
-            presentation: "modal",
-            headerBackTitle: "Bankroll",
-          }} 
-        />
-        <Stack.Screen 
-          name="bankroll-session/[id]" 
-          options={{ 
-            title: "Poker Session",
-            headerBackTitle: "Bankroll",
-          }} 
-        />
-      </Stack>
+      {session ? (
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: colors.background.primary,
+            },
+            headerTintColor: colors.text.primary,
+            headerTitleStyle: {
+              fontWeight: '600',
+            },
+            contentStyle: {
+              backgroundColor: colors.background.primary,
+            },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="new-session" 
+            options={{ 
+              title: "Add Session",
+              presentation: "modal",
+              headerBackTitle: "Sessions",
+            }} 
+          />
+          <Stack.Screen 
+            name="session/[id]" 
+            options={{ 
+              title: "Session Details",
+              headerBackTitle: "Sessions",
+            }} 
+          />
+          <Stack.Screen 
+            name="edit-session/[id]" 
+            options={{ 
+              title: "Edit Session",
+              presentation: "modal",
+              headerBackTitle: "Sessions",
+            }} 
+          />
+          <Stack.Screen 
+            name="new-bankroll-session" 
+            options={{ 
+              title: "New Poker Session",
+              presentation: "modal",
+              headerBackTitle: "Bankroll",
+            }} 
+          />
+          <Stack.Screen 
+            name="bankroll-session/[id]" 
+            options={{ 
+              title: "Poker Session",
+              headerBackTitle: "Bankroll",
+            }} 
+          />
+        </Stack>
+      ) : (
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+        </Stack>
+      )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  loadingContent: {
+    backgroundColor: colors.background.secondary,
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.text.primary,
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

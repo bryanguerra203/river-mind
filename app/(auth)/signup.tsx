@@ -53,6 +53,9 @@ export default function SignupScreen() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: 'exp://localhost:19000/--/login', // Adjust port if necessary
+        },
       });
 
       if (error) throw error;
