@@ -403,13 +403,11 @@ function findBestLocation(sessions: Session[]): { value: string; isPositive?: bo
     });
   });
 
-  console.log('Location stats:', Object.fromEntries(locationStats));
 
   const locations = Array.from(locationStats.entries())
     .filter(([_, stats]) => stats.sessions >= 1) // Changed from 3 to 1 to include all locations
     .sort(([_, a], [__, b]) => b.profit - a.profit);
 
-  console.log('Sorted locations:', locations);
 
   if (locations.length === 0) return { value: 'N/A' };
 
@@ -431,13 +429,10 @@ function findWorstLocation(sessions: Session[]): { value: string; isPositive?: b
     });
   });
 
-  console.log('Location stats for worst:', Object.fromEntries(locationStats));
 
   const locations = Array.from(locationStats.entries())
     .filter(([_, stats]) => stats.sessions >= 1) // Changed from 3 to 1 to include all locations
     .sort(([_, a], [__, b]) => a.profit - b.profit); // Sort by ascending profit (worst first)
-
-  console.log('Sorted locations for worst:', locations);
 
   if (locations.length === 0) return { value: 'N/A' };
 

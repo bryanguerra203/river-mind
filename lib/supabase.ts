@@ -3,6 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import NetInfo from '@react-native-community/netinfo';
 
+// Custom AsyncStorage wrapper with logging
+const CustomAsyncStorage = {
+  async getItem(key: string) {
+    const item = await AsyncStorage.getItem(key);
+    return item;
+  },
+  async setItem(key: string, value: string) {
+    await AsyncStorage.setItem(key, value);
+  },
+  async removeItem(key: string) {
+    await AsyncStorage.removeItem(key);
+  },
+};
+
 // Replace these with your Supabase project URL and anon key
 export const supabaseUrl = 'https://xbaxrjvapgfyythsaqib.supabase.co';
 export const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiYXhyanZhcGdmeXl0aHNhcWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNTQ1NzEsImV4cCI6MjA2NDczMDU3MX0.R6DmiLXCI3L5v1NjN0_9lnEX8TDwHpt3nVV6OfM4XuE';
@@ -16,20 +30,12 @@ const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       // Check network connectivity before making the request
       const netInfo = await NetInfo.fetch();
-      console.log('Network status:', {
-        isConnected: netInfo.isConnected,
-        type: netInfo.type,
-        isInternetReachable: netInfo.isInternetReachable,
-        details: netInfo.details
-      });
 
       if (!netInfo.isConnected) {
         throw new Error('No network connection');
       }
 
-      console.log('Making request to:', input);
       const response = await fetch(input, init);
-      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const error = await response.json();
@@ -85,7 +91,7 @@ const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: CustomAsyncStorage, // Use the custom storage with logging
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
@@ -106,13 +112,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const verifyAuth = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
     
-    console.log('Auth state:', {
-      isAuthenticated: !!session,
-      userId: session?.user?.id,
-      accessToken: session?.access_token ? 'present' : 'missing'
-    });
+    if (error) {
+      console.error("Error getting session for auth verification:", error);
+      throw error;
+    }
     
     return {
       isAuthenticated: !!session,
