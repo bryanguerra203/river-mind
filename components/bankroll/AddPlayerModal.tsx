@@ -43,7 +43,8 @@ export default function AddPlayerModal({
       isValid = false;
     }
     
-    const buyInAmount = Number(buyIn);
+    // Remove commas before converting to number
+    const buyInAmount = Number(buyIn.replace(/,/g, ''));
     if (isNaN(buyInAmount) || buyInAmount <= 0) {
       setBuyInError('Please enter a valid amount');
       isValid = false;
@@ -54,8 +55,11 @@ export default function AddPlayerModal({
     setIsLoading(true);
     
     try {
-      // Add player to the session
-      addPlayer(sessionId, name.trim(), buyInAmount);
+      // Add player to the session with initial buy-in
+      await addPlayer(sessionId, {
+        name: name.trim(),
+        initialBuyIn: buyInAmount
+      });
       
       // Reset form and close modal
       setName('');
@@ -85,11 +89,13 @@ export default function AddPlayerModal({
     
     // Ensure only one decimal point
     const parts = cleanedText.split('.');
-    const formattedText = parts.length > 1 
-      ? `${parts[0]}.${parts.slice(1).join('')}`
-      : cleanedText;
+    const wholeNumber = parts[0];
+    const decimal = parts.length > 1 ? `.${parts.slice(1).join('')}` : '';
     
-    setBuyIn(formattedText);
+    // Add commas to the whole number part
+    const formattedWholeNumber = wholeNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    setBuyIn(formattedWholeNumber + decimal);
     setBuyInError('');
   };
   
@@ -177,6 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderRadius: 16,
     padding: 24,
+    paddingBottom: 40,
     width: '90%',
     maxWidth: 400,
   },

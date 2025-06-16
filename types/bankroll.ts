@@ -2,12 +2,15 @@ export interface BuyIn {
   id: string;
   amount: number;
   timestamp: string; // ISO string
+  created_at: string;
 }
 
 export interface CashOut {
   id: string;
+  playerId: string;
   amount: number;
   timestamp: string; // ISO string
+  created_at: string;
 }
 
 export interface Player {
@@ -18,16 +21,22 @@ export interface Player {
   cashOuts: CashOut[];
   totalCashOut: number;
   profit: number;
+  created_at: string;
+  updated_at: string;
+  initialBuyIn?: number;
 }
 
 export interface GameSession {
   id: string;
   location: string;
   date: string; // ISO string
-  players: Player[];
+  players?: Player[];
   potAmount: number;
   totalBuyIns: number;
   totalCashOuts: number;
   isActive: boolean;
-  notes: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  duration?: number; // Duration in minutes
 }

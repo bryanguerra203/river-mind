@@ -57,7 +57,11 @@ export default function CashOutModal({
     
     try {
       // Cash out the player
-      addCashOut(sessionId, player.id, cashOutAmount);
+      await addCashOut(sessionId, {
+        playerId: player.id,
+        amount: cashOutAmount,
+        timestamp: new Date().toISOString()
+      });
       
       // Reset form and close modal
       setAmount('');
@@ -190,6 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderRadius: 16,
     padding: 24,
+    paddingBottom: 40,
     width: '90%',
     maxWidth: 400,
   },

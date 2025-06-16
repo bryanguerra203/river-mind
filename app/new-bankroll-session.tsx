@@ -42,7 +42,20 @@ export default function NewBankrollSessionScreen() {
     
     try {
       // Create a new session with the selected date
-      const sessionId = createSession(location.trim(), date);
+      const newSession = {
+        location: location.trim(),
+        date: date.toISOString(),
+        players: [],
+        potAmount: 0,
+        totalBuyIns: 0,
+        totalCashOuts: 0,
+        isActive: true
+      };
+      
+      await createSession(newSession);
+      
+      // Get the session ID from the store
+      const sessionId = useBankrollStore.getState().activeSessions[0].id;
       
       // Navigate to the session screen
       router.replace(`/bankroll-session/${sessionId}`);

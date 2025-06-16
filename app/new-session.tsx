@@ -18,6 +18,7 @@ import Button from '@/components/Button';
 import DatePicker from '@/components/DatePicker';
 import { gameTypes, sessionTypes, locationTypes, defaultStakes, sessionStatuses } from '@/constants/gameTypes';
 import { generateId } from '@/utils/helpers';
+import TagInput from '@/components/TagInput';
 
 export default function NewSessionScreen() {
   const router = useRouter();
@@ -376,41 +377,12 @@ export default function NewSessionScreen() {
               style={styles.notesInput}
             />
             
-            <View style={styles.tagsContainer}>
-              <Text style={styles.label}>Tags</Text>
-              <View style={styles.tagInputContainer}>
-                <Input
-                  placeholder="Add a tag"
-                  value={tag}
-                  onChangeText={setTag}
-                  containerStyle={styles.tagInput}
-                  leftIcon={<Tag size={20} color={colors.text.secondary} />}
-                />
-                <Button 
-                  title="Add" 
-                  onPress={handleAddTag} 
-                  variant="secondary"
-                  size="small"
-                  disabled={!tag.trim()}
-                  style={styles.addTagButton}
-                />
-              </View>
-              
-              {tags.length > 0 && (
-                <View style={styles.tagsList}>
-                  {tags.map((tag, index) => (
-                    <View key={index} style={styles.tagItem}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                      <TouchableOpacity 
-                        onPress={() => handleRemoveTag(index)}
-                        style={styles.removeTagButton}
-                      >
-                        <X size={16} color={colors.text.tertiary} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
+            <View style={styles.formGroup}>
+              <TagInput
+                value={tags}
+                onChange={setTags}
+                placeholder="Add tags (e.g., 'good game', 'tough table')"
+              />
             </View>
           </View>
         )}
@@ -447,16 +419,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingTop: 60,
-    paddingBottom: 200,
+    paddingBottom: 32,
   },
   formSection: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   label: {
     color: colors.text.secondary,
@@ -468,51 +440,14 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     color: colors.text.primary,
   },
-  tagsContainer: {
-    marginBottom: 16,
-  },
-  tagInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagInput: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  addTagButton: {
-    marginLeft: 8,
-  },
-  tagsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 12,
-  },
-  tagItem: {
-    backgroundColor: colors.background.input,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagText: {
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginRight: 4,
-  },
-  removeTagButton: {
-    width: 16,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+  formGroup: {
+    marginBottom: 12,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 32,
+    marginTop: 8,
+    marginBottom: 16,
   },
   cancelButton: {
     flex: 1,

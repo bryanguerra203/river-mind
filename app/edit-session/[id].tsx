@@ -17,6 +17,7 @@ import Select from '@/components/Select';
 import Button from '@/components/Button';
 import DatePicker from '@/components/DatePicker';
 import { gameTypes, sessionTypes, locationTypes } from '@/constants/gameTypes';
+import TagInput from '@/components/TagInput';
 
 export default function EditSessionScreen() {
   const { id } = useLocalSearchParams();
@@ -300,41 +301,13 @@ export default function EditSessionScreen() {
             style={styles.notesInput}
           />
           
-          <View style={styles.tagsContainer}>
+          <View style={styles.formGroup}>
             <Text style={styles.label}>Tags</Text>
-            <View style={styles.tagInputContainer}>
-              <Input
-                placeholder="Add a tag"
-                value={tag}
-                onChangeText={setTag}
-                containerStyle={styles.tagInput}
-                leftIcon={<Tag size={20} color={colors.text.secondary} />}
-              />
-              <Button 
-                title="Add" 
-                onPress={handleAddTag} 
-                variant="secondary"
-                size="small"
-                disabled={!tag.trim()}
-                style={styles.addTagButton}
-              />
-            </View>
-            
-            {tags.length > 0 && (
-              <View style={styles.tagsList}>
-                {tags.map((tag, index) => (
-                  <View key={index} style={styles.tagItem}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                    <TouchableOpacity 
-                      onPress={() => handleRemoveTag(index)}
-                      style={styles.removeTagButton}
-                    >
-                      <X size={16} color={colors.text.tertiary} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
+            <TagInput
+              value={tags}
+              onChange={setTags}
+              placeholder="Add tags (e.g., 'good game', 'tough table')"
+            />
           </View>
         </View>
         
@@ -389,45 +362,8 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     color: colors.text.primary, // Ensure notes text is white/light
   },
-  tagsContainer: {
+  formGroup: {
     marginBottom: 16,
-  },
-  tagInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagInput: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  addTagButton: {
-    marginLeft: 8,
-  },
-  tagsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 12,
-  },
-  tagItem: {
-    backgroundColor: colors.background.input,
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tagText: {
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginRight: 4,
-  },
-  removeTagButton: {
-    width: 16,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
