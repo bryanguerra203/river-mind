@@ -28,6 +28,9 @@ export interface SessionStats {
   currentStreak: number;
   longestWinStreak: number;
   longestLoseStreak: number;
+  locationStats: { [key: string]: { profit: number; sessions: number } };
+  bestLocation: string | null;
+  worstLocation: string | null;
 }
 
 export interface SessionFilters {
@@ -41,6 +44,8 @@ export interface SessionFilters {
   };
   stakes?: string;
   status?: 'past' | 'current'; // Added to filter by session status
+  minProfit?: number;
+  maxProfit?: number;
 }
 
 export interface Bankroll {

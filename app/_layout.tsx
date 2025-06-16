@@ -30,50 +30,84 @@ export default function RootLayout() {
   
   const [session, setSession] = useState<Session | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [splashHidden, setSplashHidden] = useState(false);
 
+  // Handle font loading errors
   useEffect(() => {
     if (error) {
-      console.error(error);
       throw error;
     }
   }, [error]);
 
+  // Handle splash screen hiding
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore errors from hiding splash screen
+      });
     }
   }, [loaded]);
 
+  // Handle session checking
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
+        if (mounted) {
+          setSession(currentSession);
+          setInitialLoading(false);
+        }
       } catch (e) {
         console.error("Error getting session on startup:", e);
-      } finally {
-        setInitialLoading(false);
+        if (mounted) {
+          setInitialLoading(false);
+        }
       }
     };
 
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
+      if (mounted) {
+        setSession(newSession);
+      }
     });
 
     return () => {
+      mounted = false;
       subscription?.unsubscribe();
     };
   }, []);
 
+  // Handle server sync
   useEffect(() => {
-    if (isOnline && session) {
-      syncWithServer();
-    }
-  }, [isOnline, session, syncWithServer]);
+    const syncData = async () => {
+      if (isOnline && session) {
+        try {
+          await syncWithServer();
+        } catch (error: any) {
+          // Check for 403 or session_not_found error from Supabase
+          if (error.message && (error.message.includes('403') || error.message.includes('session_not_found'))) {
+            console.warn("Session invalidated, signing out and redirecting to login.");
+            try {
+              await supabase.auth.signOut();
+              router.replace('/(auth)/login');
+            } catch (signOutError) {
+              console.error("Error signing out after session invalidation:", signOutError);
+            }
+          } else {
+            console.error("Error during server sync:", error);
+          }
+        }
+      }
+    };
+    syncData();
+  }, [isOnline, session, syncWithServer, router]);
 
-  if (initialLoading || !loaded) {
+  // Show loading screen only during initial load
+  if (!loaded || initialLoading) {
     return (
       <Modal
         visible={true}

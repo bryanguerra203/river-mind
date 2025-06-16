@@ -28,7 +28,7 @@ interface SessionState {
   addCustomStake: (stake: string) => void;
   syncWithServer: () => Promise<void>;
   clearStore: () => void;
-  syncBankroll: () => Promise<void>;
+  syncBankroll: (userId: string) => Promise<void>;
   
   // Computed
   getFilteredSessions: () => Session[];
@@ -48,6 +48,9 @@ const defaultStats: SessionStats = {
   currentStreak: 0,
   longestWinStreak: 0,
   longestLoseStreak: 0,
+  locationStats: {},
+  bestLocation: null,
+  worstLocation: null,
 };
 
 const defaultBankroll: Bankroll = {
@@ -140,8 +143,8 @@ export const useSessionStore = create<SessionState>()(
         try {
           // Verify authentication first
           const authState = await verifyAuth();
-          if (!authState.isAuthenticated) {
-            throw new Error('User not authenticated');
+          if (!authState.isAuthenticated || !authState.userId) {
+            throw new Error('User not authenticated or user ID missing');
           }
 
           console.log('Auth verified, fetching sessions for user:', authState.userId);
@@ -178,7 +181,7 @@ export const useSessionStore = create<SessionState>()(
             endTime: session.endtime,
           })) || [];
 
-          console.log('Formatted sessions:', formattedSessions);
+          // console.log('Formatted sessions:', formattedSessions);
 
           set((state) => ({
             sessions: formattedSessions,
@@ -187,7 +190,7 @@ export const useSessionStore = create<SessionState>()(
           }));
 
           // Also sync bankroll
-          await get().syncBankroll();
+          await get().syncBankroll(authState.userId);
 
           set({ isLoading: false });
         } catch (error: any) {
@@ -202,11 +205,11 @@ export const useSessionStore = create<SessionState>()(
           // Get the current user session
           const { data: { user }, error: authError } = await supabase.auth.getUser();
           
-          console.log('Auth check:', {
-            user: user ? { id: user.id, email: user.email } : null,
-            authError,
-            session: await supabase.auth.getSession()
-          });
+          // console.log('Auth check:', {
+          //   user: user ? { id: user.id, email: user.email } : null,
+          //   authError,
+          //   session: await supabase.auth.getSession()
+          // });
           
           if (authError) {
             console.error('Auth error:', authError);
@@ -237,7 +240,7 @@ export const useSessionStore = create<SessionState>()(
             endtime: session.endTime ? new Date(session.endTime).toISOString() : null,
           };
 
-          console.log('Attempting to insert session:', formattedSession);
+          // console.log('Attempting to insert session:', formattedSession);
 
           // First try a simple insert without select
           const { error: insertError } = await supabase
@@ -245,173 +248,75 @@ export const useSessionStore = create<SessionState>()(
             .insert([formattedSession]);
 
           if (insertError) {
-            console.error('Insert error:', {
-              error: insertError,
-              code: insertError.code,
-              message: insertError.message,
-              details: insertError.details,
-              hint: insertError.hint
-            });
-            throw insertError;
+            console.error('Insert error:', insertError);
+            throw new Error(`Failed to insert session: ${insertError.message}`);
           }
+          
+          // After successful insertion, sync sessions to update the local state
+          await get().syncWithServer(); 
 
-          // If insert was successful, fetch the inserted session
-          const { data: insertedSession, error: fetchError } = await supabase
-            .from('sessions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (fetchError) {
-            console.error('Fetch error:', fetchError);
-            throw fetchError;
-          }
-
-          if (!insertedSession) {
-            throw new Error('Failed to fetch inserted session');
-          }
-
-          // Convert the response back to our camelCase format
-          const formattedResponse = {
-            ...insertedSession,
-            gameType: insertedSession.gametype,
-            sessionType: insertedSession.sessiontype,
-            locationType: insertedSession.locationtype,
-            buyIn: insertedSession.buyin,
-            cashOut: insertedSession.cashout,
-            startTime: insertedSession.starttime,
-            endTime: insertedSession.endtime,
-          };
-
-          // After successful session insert, update bankroll
-          const profit = session.cashOut - session.buyIn;
-          const currentBankroll = get().bankroll;
-          await get().updateBankroll(currentBankroll.currentAmount + profit);
-
-          set((state) => {
-            const newSessions = [...state.sessions, formattedResponse];
-            const newStats = calculateSessionStats(newSessions);
-            return { 
-              sessions: newSessions,
-              stats: newStats,
-              isLoading: false
-            };
-          });
+          set(state => ({ isLoading: false }));
         } catch (error: any) {
           console.error('Error adding session:', error);
           set({ error: error.message, isLoading: false });
         }
       },
 
-      updateSession: async (id, updatedSession) => {
+      updateSession: async (id, session) => {
         set({ isLoading: true, error: null });
         try {
-          // Get the current user
           const { data: { user }, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Auth error:', authError);
-            throw new Error(`Authentication error: ${authError.message}`);
-          }
-          
-          if (!user) {
-            console.error('No user found');
-            throw new Error('User not authenticated');
-          }
+          if (authError) throw authError;
+          if (!user) throw new Error('User not authenticated');
 
-          console.log('Current user:', {
-            id: user.id,
-            email: user.email
-          });
+          const oldSession = get().sessions.find(s => s.id === id);
 
-          // Convert camelCase to snake_case for Supabase
-          const formattedUpdate = {
-            date: updatedSession.date ? new Date(updatedSession.date).toISOString().split('T')[0] : undefined,
-            gametype: updatedSession.gameType,
-            sessiontype: updatedSession.sessionType,
-            locationtype: updatedSession.locationType,
-            location: updatedSession.location,
-            stakes: updatedSession.stakes,
-            buyin: updatedSession.buyIn,
-            cashout: updatedSession.cashOut,
-            duration: updatedSession.duration,
-            notes: updatedSession.notes,
-            tags: updatedSession.tags,
-            status: updatedSession.status,
-            starttime: updatedSession.startTime ? new Date(updatedSession.startTime).toISOString() : undefined,
-            endtime: updatedSession.endTime ? new Date(updatedSession.endTime).toISOString() : undefined,
-          };
+          const formattedUpdate: { [key: string]: any } = {};
+          if (session.date) formattedUpdate.date = new Date(session.date).toISOString().split('T')[0];
+          if (session.gameType !== undefined) formattedUpdate.gametype = session.gameType;
+          if (session.sessionType !== undefined) formattedUpdate.sessiontype = session.sessionType;
+          if (session.locationType !== undefined) formattedUpdate.locationtype = session.locationType;
+          if (session.location !== undefined) formattedUpdate.location = session.location;
+          if (session.stakes !== undefined) formattedUpdate.stakes = session.stakes;
+          if (session.buyIn !== undefined) formattedUpdate.buyin = session.buyIn;
+          if (session.cashOut !== undefined) formattedUpdate.cashout = session.cashOut;
+          if (session.duration !== undefined) formattedUpdate.duration = session.duration;
+          if (session.notes !== undefined) formattedUpdate.notes = session.notes;
+          if (session.tags !== undefined) formattedUpdate.tags = session.tags;
+          if (session.status !== undefined) formattedUpdate.status = session.status;
+          if (session.startTime !== undefined) formattedUpdate.starttime = session.startTime ? new Date(session.startTime).toISOString() : null;
+          if (session.endTime !== undefined) formattedUpdate.endtime = session.endTime ? new Date(session.endTime).toISOString() : null;
 
-          console.log('Updating session:', {
-            sessionId: id,
-            userId: user.id,
-            updateData: formattedUpdate
-          });
-
-          // First update the session
-          const { error: updateError } = await supabase
+          const { data, error: updateError } = await supabase
             .from('sessions')
             .update(formattedUpdate)
             .eq('id', id)
-            .eq('user_id', user.id);
-
-          if (updateError) {
-            console.error('Update error:', {
-              error: updateError,
-              code: updateError.code,
-              message: updateError.message,
-              details: updateError.details,
-              hint: updateError.hint
-            });
-            throw updateError;
-          }
-
-          console.log('Update successful, fetching updated session...');
-
-          // Then fetch the updated session
-          const { data, error: fetchError } = await supabase
-            .from('sessions')
-            .select('*')
-            .eq('id', id)
-            .eq('user_id', user.id)
+            .select()
             .single();
 
-          if (fetchError) {
-            console.error('Fetch error:', {
-              error: fetchError,
-              code: fetchError.code,
-              message: fetchError.message,
-              details: fetchError.details,
-              hint: fetchError.hint
-            });
-            throw fetchError;
-          }
+          if (updateError) throw updateError;
 
-          if (!data) {
-            throw new Error('Failed to fetch updated session');
-          }
-
-          console.log('Successfully fetched updated session:', data);
-
-          // Convert the response back to our camelCase format
           const formattedResponse = {
-            ...data,
+            id: data.id,
+            date: data.date,
             gameType: data.gametype,
             sessionType: data.sessiontype,
             locationType: data.locationtype,
+            location: data.location,
+            stakes: data.stakes,
             buyIn: data.buyin,
             cashOut: data.cashout,
+            duration: data.duration,
+            notes: data.notes,
+            tags: data.tags,
+            status: data.status,
             startTime: data.starttime,
             endTime: data.endtime,
           };
 
-          // After successful session update, update bankroll
-          const oldSession = get().sessions.find(s => s.id === id);
-          if (oldSession && updatedSession.buyIn !== undefined && updatedSession.cashOut !== undefined) {
+          if (oldSession && formattedResponse.buyIn !== undefined && formattedResponse.cashOut !== undefined) {
             const oldProfit = oldSession.cashOut - oldSession.buyIn;
-            const newProfit = updatedSession.cashOut - updatedSession.buyIn;
+            const newProfit = formattedResponse.cashOut - formattedResponse.buyIn;
             const currentBankroll = get().bankroll;
             await get().updateBankroll(currentBankroll.currentAmount - oldProfit + newProfit);
           }
@@ -436,72 +341,38 @@ export const useSessionStore = create<SessionState>()(
       deleteSession: async (id) => {
         set({ isLoading: true, error: null });
         try {
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          if (authError) throw authError;
+          if (!user) throw new Error('User not authenticated');
+
           const { error } = await supabase
             .from('sessions')
             .delete()
-            .eq('id', id);
+            .eq('id', id)
+            .eq('user_id', user.id); // Ensure only the user's sessions can be deleted
 
           if (error) throw error;
 
-          set((state) => {
-            const sessionToDelete = state.sessions.find(s => s.id === id);
-            const newSessions = state.sessions.filter((session) => session.id !== id);
-            const newStats = calculateSessionStats(newSessions);
-            let newBankroll = state.bankroll;
-            if (sessionToDelete) {
-              const profitToRemove = sessionToDelete.cashOut - sessionToDelete.buyIn;
-              newBankroll = {
-                ...state.bankroll,
-                currentAmount: state.bankroll.currentAmount - profitToRemove,
-                lastUpdated: new Date().toISOString(),
-              };
-            }
-            return { 
-              sessions: newSessions,
-              stats: newStats,
-              bankroll: newBankroll,
-              isLoading: false
-            };
-          });
-
-          // After successful session delete, update bankroll
-          const sessionToDelete = get().sessions.find(s => s.id === id);
-          if (sessionToDelete) {
-            const profitToRemove = sessionToDelete.cashOut - sessionToDelete.buyIn;
-            const currentBankroll = get().bankroll;
-            await get().updateBankroll(currentBankroll.currentAmount - profitToRemove);
-          }
-
-          set((state) => {
-            const newSessions = state.sessions.filter((session) => session.id !== id);
-            const newStats = calculateSessionStats(newSessions);
-            return { 
-              sessions: newSessions,
-              stats: newStats,
-              isLoading: false
-            };
-          });
+          set((state) => ({
+            sessions: state.sessions.filter((session) => session.id !== id),
+            stats: calculateSessionStats(state.sessions.filter((session) => session.id !== id)),
+            isLoading: false,
+          }));
         } catch (error: any) {
           console.error('Error deleting session:', error);
           set({ error: error.message, isLoading: false });
         }
       },
 
+      setFilters: (filters) => set({ filters }),
+      clearFilters: () => set({ filters: {} }),
+
       clearAllSessions: async () => {
         set({ isLoading: true, error: null });
         try {
-          // Get the current user
           const { data: { user }, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) {
-            console.error('Auth error:', authError);
-            throw new Error(`Authentication error: ${authError.message}`);
-          }
-          
-          if (!user) {
-            console.error('No user found');
-            throw new Error('User not authenticated');
-          }
+          if (authError) throw authError;
+          if (!user) throw new Error('User not authenticated');
 
           // Delete all sessions for the current user
           const { error } = await supabase
@@ -511,31 +382,20 @@ export const useSessionStore = create<SessionState>()(
 
           if (error) throw error;
 
-          set({
-            sessions: [],
-            stats: defaultStats,
-            bankroll: defaultBankroll,
-            isLoading: false
+          set({ 
+            sessions: [], 
+            stats: defaultStats, 
+            isLoading: false 
           });
         } catch (error: any) {
-          console.error('Error clearing sessions:', error);
+          console.error('Error clearing all sessions:', error);
           set({ error: error.message, isLoading: false });
-          throw error; // Re-throw to handle in the UI
         }
       },
       
-      setFilters: (filters) => {
-        set({ filters });
-      },
-      
-      clearFilters: () => {
-        set({ filters: {} });
-      },
-      
       initializeStats: () => {
-        set((state) => ({
-          stats: calculateSessionStats(state.sessions)
-        }));
+        const { sessions } = get();
+        set({ stats: calculateSessionStats(sessions) });
       },
       
       updateBankroll: async (amount) => {
@@ -593,64 +453,34 @@ export const useSessionStore = create<SessionState>()(
         }
       },
       
-      syncBankroll: async () => {
+      syncBankroll: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-          const { data: { user }, error: authError } = await supabase.auth.getUser();
-          
-          if (authError) throw authError;
-          if (!user) throw new Error('User not authenticated');
-
-          // First try to get existing bankroll
-          const { data: bankroll, error: fetchError } = await supabase
+          const { data: bankrollData, error } = await supabase
             .from('bankroll')
             .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle(); // Use maybeSingle instead of single to handle no results
+            .eq('user_id', userId)
+            .single();
 
-          if (fetchError) {
-            console.error('Error fetching bankroll:', fetchError);
-            throw fetchError;
-          }
-
-          if (bankroll) {
-            // Update state with existing bankroll
-            set((state) => ({
-              bankroll: {
-                currentAmount: bankroll.current_amount,
-                initialAmount: bankroll.initial_amount,
-                lastUpdated: bankroll.last_updated,
-              },
-              isLoading: false
-            }));
-          } else {
-            // No bankroll exists, create one with default values
-            const defaultBankroll = {
-              user_id: user.id,
-              current_amount: 0,
-              initial_amount: 0,
-              last_updated: new Date().toISOString()
-            };
-
-            const { error: insertError } = await supabase
-              .from('bankroll')
-              .insert([defaultBankroll]);
-
-            if (insertError) {
-              console.error('Error creating default bankroll:', insertError);
-              throw insertError;
+          if (error) {
+            if (error.code === 'PGRST116') { // No rows found
+              set(state => ({
+                bankroll: defaultBankroll,
+                isLoading: false
+              }));
+              return;
             }
-
-            // Update state with default bankroll
-            set((state) => ({
-              bankroll: {
-                currentAmount: 0,
-                initialAmount: 0,
-                lastUpdated: new Date().toISOString(),
-              },
-              isLoading: false
-            }));
+            throw error;
           }
+
+          set(state => ({
+            bankroll: {
+              currentAmount: bankrollData.current_amount || 0,
+              initialAmount: bankrollData.initial_amount || 0,
+              lastUpdated: bankrollData.last_updated,
+            },
+            isLoading: false
+          }));
         } catch (error: any) {
           console.error('Error syncing bankroll:', error);
           set({ error: error.message, isLoading: false });
@@ -658,11 +488,12 @@ export const useSessionStore = create<SessionState>()(
       },
       
       addCustomStake: (stake) => {
-        set((state) => ({
-          customStakes: state.customStakes.includes(stake) 
-            ? state.customStakes 
-            : [...state.customStakes, stake]
-        }));
+        set((state) => {
+          if (!state.customStakes.includes(stake)) {
+            return { customStakes: [...state.customStakes, stake] };
+          }
+          return {};
+        });
       },
       
       getFilteredSessions: () => {
@@ -671,8 +502,8 @@ export const useSessionStore = create<SessionState>()(
       },
       
       calculateStats: () => {
-        const filteredSessions = get().getFilteredSessions();
-        return calculateSessionStats(filteredSessions);
+        const { sessions } = get();
+        return calculateSessionStats(sessions);
       },
       
       getAllStakes: () => {
@@ -685,142 +516,110 @@ export const useSessionStore = create<SessionState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         sessions: state.sessions,
+        filters: state.filters,
         bankroll: state.bankroll,
         customStakes: state.customStakes,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state && state.sessions.length > 0) {
-          state.stats = calculateSessionStats(state.sessions);
-        }
-      },
     }
   )
 );
 
 // Helper functions
 function filterSessions(sessions: Session[], filters: SessionFilters): Session[] {
-  return sessions.filter((session) => {
-    // Game type filter
-    if (filters.gameType && session.gameType !== filters.gameType) {
-      return false;
-    }
-    
-    // Session type filter
-    if (filters.sessionType && session.sessionType !== filters.sessionType) {
-      return false;
-    }
-    
-    // Location type filter
-    if (filters.locationType && session.locationType !== filters.locationType) {
-      return false;
-    }
-    
-    // Location filter
-    if (filters.location && !session.location.toLowerCase().includes(filters.location.toLowerCase())) {
-      return false;
-    }
-    
-    // Date range filter
-    if (filters.dateRange) {
-      const sessionDate = new Date(session.date);
-      const startDate = new Date(filters.dateRange.start);
-      const endDate = new Date(filters.dateRange.end);
-      
-      if (sessionDate < startDate || sessionDate > endDate) {
-        return false;
-      }
-    }
-    
-    // Stakes filter
-    if (filters.stakes && session.stakes !== filters.stakes) {
-      return false;
-    }
-    
-    // Status filter
-    if (filters.status && session.status !== filters.status) {
-      return false;
-    }
-    
+  return sessions.filter(session => {
+    // Implement filtering logic based on your filters object
+    // Example:
+    if (filters.gameType && session.gameType !== filters.gameType) return false;
+    if (filters.sessionType && session.sessionType !== filters.sessionType) return false;
+    if (filters.locationType && session.locationType !== filters.locationType) return false;
+    if (filters.minProfit !== undefined && (session.cashOut - session.buyIn) < filters.minProfit) return false;
+    if (filters.maxProfit !== undefined && (session.cashOut - session.buyIn) > filters.maxProfit) return false;
+    // Add more filters as needed
     return true;
   });
 }
 
 function calculateSessionStats(sessions: Session[]): SessionStats {
-  if (sessions.length === 0) {
-    return defaultStats;
-  }
-  
-  // Sort sessions by date
-  const sortedSessions = [...sessions].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-  
-  let totalProfit = 0;
-  let totalHours = 0;
-  let bestSession = Number.MIN_SAFE_INTEGER;
-  let worstSession = Number.MAX_SAFE_INTEGER;
+  const totalSessions = sessions.length;
+  const totalProfit = sessions.reduce((sum, s) => sum + (s.cashOut - s.buyIn), 0);
+  const totalHours = sessions.reduce((sum, s) => sum + (s.duration / 60), 0);
+  const hourlyRate = totalHours > 0 ? totalProfit / totalHours : 0;
+
+  const bestSession = sessions.reduce((max, s) => Math.max(max, s.cashOut - s.buyIn), 0);
+  const worstSession = sessions.reduce((min, s) => Math.min(min, s.cashOut - s.buyIn), 0);
+
   let winningDays = 0;
   let losingDays = 0;
   let currentStreak = 0;
   let longestWinStreak = 0;
   let longestLoseStreak = 0;
-  let currentWinStreak = 0;
-  let currentLoseStreak = 0;
-  
-  console.log('Calculating stats for sessions:', sortedSessions);
-  
-  sortedSessions.forEach((session) => {
+
+  // Streak calculation (simple, assumes sessions are sorted by date)
+  // You might need to sort sessions by date descending first if they are not
+  const sortedSessions = [...sessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  for (const session of sortedSessions) {
     const profit = session.cashOut - session.buyIn;
-    const hours = session.duration / 60;
-    
-    console.log('Session stats:', {
-      profit,
-      hours,
-      buyIn: session.buyIn,
-      cashOut: session.cashOut,
-      duration: session.duration
-    });
-    
-    totalProfit += profit;
-    totalHours += hours;
-    
-    bestSession = Math.max(bestSession, profit);
-    worstSession = Math.min(worstSession, profit);
-    
     if (profit > 0) {
       winningDays++;
-      currentWinStreak++;
-      currentLoseStreak = 0;
+      currentStreak = currentStreak >= 0 ? currentStreak + 1 : 1;
+      longestWinStreak = Math.max(longestWinStreak, currentStreak);
     } else if (profit < 0) {
       losingDays++;
-      currentLoseStreak++;
-      currentWinStreak = 0;
+      currentStreak = currentStreak <= 0 ? currentStreak - 1 : -1;
+      longestLoseStreak = Math.min(longestLoseStreak, currentStreak);
+    } else {
+      currentStreak = 0; // Reset streak on break-even
     }
-    
-    longestWinStreak = Math.max(longestWinStreak, currentWinStreak);
-    longestLoseStreak = Math.max(longestLoseStreak, currentLoseStreak);
+  }
+
+  // Calculate location stats
+  const locationStats: { [key: string]: { profit: number; sessions: number } } = {};
+  sessions.forEach(session => {
+    const location = session.location;
+    const profit = session.cashOut - session.buyIn;
+    if (locationStats[location]) {
+      locationStats[location].profit += profit;
+      locationStats[location].sessions++;
+    } else {
+      locationStats[location] = { profit, sessions: 1 };
+    }
   });
+
+  // console.log('Location stats:', locationStats);
+
+  // Sort locations by profit (best to worst)
+  const sortedLocations = Object.entries(locationStats).sort(([, a], [, b]) => b.profit - a.profit);
+
+  // console.log('Sorted locations:', sortedLocations);
+
+  // Find best location by profit
+  const bestLocation = sortedLocations.length > 0 ? sortedLocations[0][0] : null;
   
-  // Calculate current streak
-  const lastSession = sortedSessions[sortedSessions.length - 1];
-  const lastProfit = lastSession.cashOut - lastSession.buyIn;
-  currentStreak = lastProfit > 0 ? currentWinStreak : -currentLoseStreak;
-  
-  const stats = {
-    totalSessions: sessions.length,
+  // console.log('Location stats for worst:', locationStats);
+
+  // Sort locations by profit (worst to best)
+  const sortedLocationsWorst = Object.entries(locationStats).sort(([, a], [, b]) => a.profit - b.profit);
+
+  // console.log('Sorted locations for worst:', sortedLocationsWorst);
+
+  // Find worst location by profit
+  const worstLocation = sortedLocationsWorst.length > 0 ? sortedLocationsWorst[0][0] : null;
+
+  return {
+    totalSessions,
     totalProfit,
     totalHours,
-    hourlyRate: totalHours > 0 ? totalProfit / totalHours : 0,
+    hourlyRate,
     bestSession,
-    worstSession: worstSession === Number.MAX_SAFE_INTEGER ? 0 : worstSession,
+    worstSession,
     winningDays,
     losingDays,
-    currentStreak,
+    currentStreak: Math.abs(currentStreak), // Return absolute value of current streak
     longestWinStreak,
-    longestLoseStreak,
+    longestLoseStreak: Math.abs(longestLoseStreak), // Return absolute value of longest lose streak
+    locationStats,
+    bestLocation,
+    worstLocation,
   };
-  
-  console.log('Calculated stats:', stats);
-  
-  return stats;
 }
