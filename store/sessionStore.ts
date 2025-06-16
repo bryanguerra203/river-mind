@@ -591,7 +591,7 @@ function calculateSessionStats(sessions: Session[]): SessionStats {
   // Sort locations by profit (best to worst)
   const sortedLocations = Object.entries(locationStats).sort(([, a], [, b]) => b.profit - a.profit);
 
-  // console.log('Sorted locations:', sortedLocations);
+  // console.log(':', sortedLocations);
 
   // Find best location by profit
   const bestLocation = sortedLocations.length > 0 ? sortedLocations[0][0] : null;
@@ -601,7 +601,7 @@ function calculateSessionStats(sessions: Session[]): SessionStats {
   // Sort locations by profit (worst to best)
   const sortedLocationsWorst = Object.entries(locationStats).sort(([, a], [, b]) => a.profit - b.profit);
 
-  // console.log('Sorted locations for worst:', sortedLocationsWorst);
+   console.log('Sorted locations for worst:', sortedLocationsWorst);
 
   // Find worst location by profit
   const worstLocation = sortedLocationsWorst.length > 0 ? sortedLocationsWorst[0][0] : null;
