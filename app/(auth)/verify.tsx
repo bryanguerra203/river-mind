@@ -13,6 +13,7 @@ export default function VerifyScreen() {
   const { email } = params;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60); // Start with 60 seconds
   const syncWithServer = useSessionStore(state => state.syncWithServer);
   
   // Create refs for each input
@@ -22,6 +23,21 @@ export default function VerifyScreen() {
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, OTP_LENGTH);
   }, []);
+
+  // Countdown timer effect
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [resendTimer]);
 
   const handleChangeText = (text: string, index: number) => {
     // Update the OTP array
@@ -83,6 +99,7 @@ export default function VerifyScreen() {
       if (error) throw error;
 
       Alert.alert('Success', 'A new verification code has been sent to your email');
+      setResendTimer(60); // Reset timer to 60 seconds
     } catch (error: any) {
       console.error('Resend code error:', error);
       Alert.alert('Error', error.message || 'Failed to resend verification code');
@@ -142,9 +159,13 @@ export default function VerifyScreen() {
           <TouchableOpacity 
             onPress={handleResendCode}
             style={styles.resendLink}
+            disabled={resendTimer > 0 || loading}
           >
-            <Text style={styles.resendText}>
-              Didn't receive the code? <Text style={styles.resendTextBold}>Resend</Text>
+            <Text style={[styles.resendText, resendTimer > 0 && styles.resendTextDisabled]}>
+              {resendTimer > 0 
+                ? `Resend code in ${resendTimer}s` 
+                : "Didn't receive the code? "}
+              {resendTimer === 0 && <Text style={styles.resendTextBold}>Resend</Text>}
             </Text>
           </TouchableOpacity>
         </View>
@@ -227,5 +248,9 @@ const styles = StyleSheet.create({
   resendTextBold: {
     color: colors.accent.primary,
     fontWeight: '600',
+  },
+  resendTextDisabled: {
+    color: colors.text.secondary,
+    opacity: 0.7,
   },
 });

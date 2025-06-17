@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -16,6 +16,8 @@ export default function ForgotPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   // Create array of refs
   const inputRefs = useRef<Array<TextInput | null>>([]);
@@ -25,26 +27,51 @@ export default function ForgotPasswordScreen() {
     inputRefs.current = inputRefs.current.slice(0, OTP_LENGTH);
   }, []);
 
+  // Countdown timer effect
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [resendTimer]);
+
   const handleSendResetEmail = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      setError('Please enter your email address');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: null,
+        redirectTo: undefined,
       });
 
       if (error) throw error;
 
       Alert.alert('Success', 'Password reset code has been sent to your email');
       setStep('otp');
+      setResendTimer(60); // Start 60 second countdown
     } catch (error: any) {
       console.error('Reset password error:', error);
-      Alert.alert('Error', error.message || 'Failed to send reset code');
+      if (error.message.includes('User not found')) {
+        setError('No account found with this email address');
+      } else if (error.message.includes('Invalid email')) {
+        setError('Please enter a valid email address');
+      } else if (error.message.includes('rate limit')) {
+        setError('Too many attempts. Please try again later');
+      } else {
+        setError(error.message || 'Failed to send reset code');
+      }
     } finally {
       setLoading(false);
     }
@@ -53,11 +80,12 @@ export default function ForgotPasswordScreen() {
   const handleVerifyOtp = async () => {
     const otpString = otp.join('');
     if (otpString.length !== 6) {
-      Alert.alert('Error', 'Please enter the complete verification code');
+      setError('Please enter the complete verification code');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const { error } = await supabase.auth.verifyOtp({
@@ -71,7 +99,15 @@ export default function ForgotPasswordScreen() {
       setStep('newPassword');
     } catch (error: any) {
       console.error('OTP verification error:', error);
-      Alert.alert('Error', error.message || 'Invalid verification code');
+      if (error.message.includes('Invalid OTP')) {
+        setError('Invalid verification code. Please try again');
+      } else if (error.message.includes('expired')) {
+        setError('Verification code has expired. Please request a new one');
+      } else if (error.message.includes('rate limit')) {
+        setError('Too many attempts. Please try again later');
+      } else {
+        setError(error.message || 'Failed to verify code');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,21 +115,22 @@ export default function ForgotPasswordScreen() {
 
   const handleUpdatePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+      setError('Password must be at least 8 characters long');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const { error } = await supabase.auth.updateUser({
@@ -114,7 +151,13 @@ export default function ForgotPasswordScreen() {
       );
     } catch (error: any) {
       console.error('Password update error:', error);
-      Alert.alert('Error', error.message || 'Failed to update password');
+      if (error.message.includes('Password should be at least')) {
+        setError('Password must be at least 8 characters long');
+      } else if (error.message.includes('rate limit')) {
+        setError('Too many attempts. Please try again later');
+      } else {
+        setError(error.message || 'Failed to update password');
+      }
     } finally {
       setLoading(false);
     }
@@ -125,6 +168,12 @@ export default function ForgotPasswordScreen() {
       <Text style={styles.description}>
         Enter your email address and we'll send you a code to reset your password
       </Text>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
       <View style={styles.inputContainer}>
         <Ionicons name="mail-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
@@ -157,6 +206,12 @@ export default function ForgotPasswordScreen() {
       <Text style={styles.description}>
         Enter the verification code sent to {email}
       </Text>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
       <View style={styles.otpContainer}>
         {Array(OTP_LENGTH).fill(0).map((_, index) => (
@@ -204,10 +259,13 @@ export default function ForgotPasswordScreen() {
       <TouchableOpacity 
         onPress={handleSendResetEmail}
         style={styles.resendLink}
-        disabled={loading}
+        disabled={resendTimer > 0 || loading}
       >
-        <Text style={styles.resendText}>
-          Didn't receive the code? <Text style={styles.resendTextBold}>Resend</Text>
+        <Text style={[styles.resendText, resendTimer > 0 && styles.resendTextDisabled]}>
+          {resendTimer > 0 
+            ? `Resend code in ${resendTimer}s` 
+            : "Didn't receive the code? "}
+          {resendTimer === 0 && <Text style={styles.resendTextBold}>Resend</Text>}
         </Text>
       </TouchableOpacity>
     </>
@@ -218,6 +276,12 @@ export default function ForgotPasswordScreen() {
       <Text style={styles.description}>
         Enter your new password
       </Text>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
@@ -409,6 +473,10 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
     fontWeight: '600',
   },
+  resendTextDisabled: {
+    color: colors.text.secondary,
+    opacity: 0.7,
+  },
   backLink: {
     marginTop: 20,
   },
@@ -419,5 +487,16 @@ const styles = StyleSheet.create({
   backTextBold: {
     color: colors.accent.primary,
     fontWeight: '600',
+  },
+  errorContainer: {
+    width: '100%',
+    padding: 10,
+    backgroundColor: colors.accent.danger,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  errorText: {
+    color: colors.text.primary,
+    textAlign: 'center',
   },
 });

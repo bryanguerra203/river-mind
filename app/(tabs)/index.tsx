@@ -57,11 +57,27 @@ export default function DashboardScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>No Sessions Yet</Text>
           <Text style={styles.emptyText}>Get started by adding your first poker session.</Text>
+
           <Button 
             title="Add Session" 
             onPress={handleAddSession} 
             style={styles.emptyButton}
           />
+
+          <View style={styles.bankrollContainerEmpty}>
+            <Text style={styles.sectionTitle}>Bankroll</Text>
+            <TouchableOpacity 
+              style={styles.bankrollCard}
+              onPress={() => setBankrollModalVisible(true)}
+            >
+              <StatsCard 
+                title="Current Bankroll" 
+                value={formatCurrency(bankroll.currentAmount)}
+                positive={bankroll.currentAmount > bankroll.initialAmount}
+                negative={bankroll.currentAmount < bankroll.initialAmount}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       );
     }
@@ -279,8 +295,9 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
+    alignItems: 'flex-start',
+    padding: 24,
+    width: '100%',
   },
   emptyTitle: {
     color: colors.text.primary,
@@ -291,11 +308,25 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.text.secondary,
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 24,
   },
-  emptyButton: {
-    width: 200,
+  bankrollContainerEmpty: {
+    width: '100%',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.background.card,
+    borderRadius: 8,
+  },
+  bankrollCard: {
+    width: '100%',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 8,
   },
   summaryContainer: {
     marginBottom: 24,
@@ -313,15 +344,6 @@ const styles = StyleSheet.create({
   },
   bankrollContainer: {
     marginBottom: 24,
-  },
-  bankrollCard: {
-    width: '100%',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 16,
   },
   quickActionContainer: {
     marginBottom: 32,
@@ -359,6 +381,10 @@ const styles = StyleSheet.create({
   },
   locationValue: {
     color: colors.text.primary,
+  },
+  emptyButton: {
+    width: 200,
+    marginBottom: 24,
   },
 });
 

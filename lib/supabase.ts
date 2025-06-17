@@ -2,18 +2,20 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import NetInfo from '@react-native-community/netinfo';
-import { Alert } from 'react-native';
 
 // Custom AsyncStorage wrapper with logging
 const CustomAsyncStorage = {
   async getItem(key: string) {
     const item = await AsyncStorage.getItem(key);
+    console.log(`AsyncStorage.getItem - Key: ${key}, Value: ${item ? 'present' : 'absent'}`);
     return item;
   },
   async setItem(key: string, value: string) {
+    console.log(`AsyncStorage.setItem - Key: ${key}, Value: ${value ? 'present' : 'absent'}`);
     await AsyncStorage.setItem(key, value);
   },
   async removeItem(key: string) {
+    console.log(`AsyncStorage.removeItem - Key: ${key}`);
     await AsyncStorage.removeItem(key);
   },
 };
@@ -31,12 +33,20 @@ const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       // Check network connectivity before making the request
       const netInfo = await NetInfo.fetch();
+      console.log('Network status:', {
+        isConnected: netInfo.isConnected,
+        type: netInfo.type,
+        isInternetReachable: netInfo.isInternetReachable,
+        details: netInfo.details
+      });
 
       if (!netInfo.isConnected) {
         throw new Error('No network connection');
       }
 
+      console.log('Making request to:', input);
       const response = await fetch(input, init);
+      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const error = await response.json();
@@ -113,12 +123,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Add function to verify auth state
 export const verifyAuth = async () => {
   try {
+    console.log("Attempting to get session for auth verification...");
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
       console.error("Error getting session for auth verification:", error);
       throw error;
     }
+    
+    console.log('Auth state for verifyAuth:', {
+      isAuthenticated: !!session,
+      userId: session?.user?.id,
+      accessToken: session?.access_token ? 'present' : 'missing'
+    });
     
     return {
       isAuthenticated: !!session,
@@ -132,40 +149,5 @@ export const verifyAuth = async () => {
       userId: null,
       session: null
     };
-  }
-};
-
-// Add error handling in verify.tsx to be more specific about OTP expiration
-const handleVerify = async () => {
-  try {
-    const { error } = await supabase.auth.verifyOtp({
-      email: email as string,
-      token: otpString,
-      type: 'email'
-    });
-
-    if (error) {
-      if (error.message.includes('expired')) {
-        Alert.alert(
-          'Code Expired',
-          'The verification code has expired. Please request a new one.',
-          [
-            {
-              text: 'Request New Code',
-              onPress: handleResendCode
-            },
-            {
-              text: 'Cancel',
-              style: 'cancel'
-            }
-          ]
-        );
-        return;
-      }
-      throw error;
-    }
-    // ... rest of the code
-  } catch (error: any) {
-    // ... error handling
   }
 }; 

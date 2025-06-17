@@ -63,7 +63,19 @@ export default function SignupScreen() {
         params: { email }
       });
     } catch (error: any) {
-      setError(error.message);
+      console.error('Signup error:', error);
+      // Handle specific error cases
+      if (error.message.includes('User already registered')) {
+        setError('An account with this email already exists');
+      } else if (error.message.includes('Password should be at least')) {
+        setError('Password must be at least 8 characters long');
+      } else if (error.message.includes('Invalid email')) {
+        setError('Please enter a valid email address');
+      } else if (error.message.includes('rate limit')) {
+        setError('Too many attempts. Please try again later');
+      } else {
+        setError(error.message || 'An error occurred during signup');
+      }
     } finally {
       setLoading(false);
     }

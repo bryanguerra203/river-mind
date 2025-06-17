@@ -255,6 +255,11 @@ export const useSessionStore = create<SessionState>()(
           // After successful insertion, sync sessions to update the local state
           await get().syncWithServer(); 
 
+          // Update bankroll with the new session's profit/loss
+          const profit = session.cashOut - session.buyIn;
+          const currentBankroll = get().bankroll;
+          await get().updateBankroll(currentBankroll.currentAmount + profit);
+
           set(state => ({ isLoading: false }));
         } catch (error: any) {
           console.error('Error adding session:', error);
@@ -345,6 +350,9 @@ export const useSessionStore = create<SessionState>()(
           if (authError) throw authError;
           if (!user) throw new Error('User not authenticated');
 
+          // Get the session to be deleted to calculate its profit/loss
+          const sessionToDelete = get().sessions.find(s => s.id === id);
+          
           const { error } = await supabase
             .from('sessions')
             .delete()
@@ -358,6 +366,14 @@ export const useSessionStore = create<SessionState>()(
             stats: calculateSessionStats(state.sessions.filter((session) => session.id !== id)),
             isLoading: false,
           }));
+
+          // Update bankroll after successful deletion
+          if (sessionToDelete) {
+            const profitToRemove = sessionToDelete.cashOut - sessionToDelete.buyIn;
+            const currentBankroll = get().bankroll;
+            await get().updateBankroll(currentBankroll.currentAmount - profitToRemove);
+          }
+
         } catch (error: any) {
           console.error('Error deleting session:', error);
           set({ error: error.message, isLoading: false });
@@ -465,7 +481,8 @@ export const useSessionStore = create<SessionState>()(
 
           if (error) {
             // Handle case where no bankroll exists for new user
-            if (error.code === 'PGRST116') {
+            if (error.code === 'PGRST116' || error.code === '406') {
+              console.log('No bankroll found for user, creating initial record...');
               // Create initial bankroll for new user
               const initialBankrollData = {
                 user_id: userId,
@@ -478,7 +495,10 @@ export const useSessionStore = create<SessionState>()(
                 .from('bankroll')
                 .insert([initialBankrollData]);
 
-              if (insertError) throw insertError;
+              if (insertError) {
+                console.error('Error creating initial bankroll:', insertError);
+                throw new Error('Failed to create initial bankroll record');
+              }
 
               set(state => ({
                 bankroll: {
@@ -490,7 +510,8 @@ export const useSessionStore = create<SessionState>()(
               }));
               return;
             }
-            throw error;
+            console.error('Error fetching bankroll:', error);
+            throw new Error('Failed to fetch bankroll data');
           }
 
           set(state => ({
@@ -503,7 +524,15 @@ export const useSessionStore = create<SessionState>()(
           }));
         } catch (error: any) {
           console.error('Error syncing bankroll:', error);
-          set({ error: error.message, isLoading: false });
+          set({ 
+            error: error.message || 'Failed to sync bankroll data', 
+            isLoading: false,
+            bankroll: {
+              currentAmount: 0,
+              initialAmount: 0,
+              lastUpdated: new Date().toISOString(),
+            }
+          });
         }
       },
       

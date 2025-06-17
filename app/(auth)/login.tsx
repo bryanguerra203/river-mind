@@ -11,15 +11,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const syncWithServer = useSessionStore(state => state.syncWithServer);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      setError('Please enter both email and password');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -36,7 +38,19 @@ export default function LoginScreen() {
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login error:', error);
-      Alert.alert('Login Failed', error.message || 'Invalid email or password');
+      
+      // Handle specific error cases with user-friendly messages
+      if (error.status === 400 || error.message?.includes('400')) {
+        setError('Invalid email or password');
+      } else if (error.message?.includes('Email not confirmed')) {
+        setError('Please verify your email address first');
+      } else if (error.message?.includes('rate limit')) {
+        setError('Too many attempts. Please try again later');
+      } else if (error.message?.includes('network')) {
+        setError('Network error. Please check your connection');
+      } else {
+        setError('An error occurred during login. Please try again');
+      }
     } finally {
       setLoading(false);
     }
@@ -61,6 +75,12 @@ export default function LoginScreen() {
           />
           <Text style={styles.title}>RiverMind</Text>
           
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           <View style={styles.inputContainer}>
             <Ionicons name="mail-outline" size={20} color={colors.text.secondary} style={styles.inputIcon} />
             <TextInput
@@ -210,5 +230,16 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorContainer: {
+    width: '100%',
+    padding: 10,
+    backgroundColor: colors.accent.danger,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  errorText: {
+    color: colors.text.primary,
+    textAlign: 'center',
   },
 }); 
