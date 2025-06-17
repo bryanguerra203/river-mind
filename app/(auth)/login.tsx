@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,26 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const syncWithServer = useSessionStore(state => state.syncWithServer);
+  const { syncWithServer, clearStore } = useSessionStore();
+  const hasClearedSession = useRef(false);
+
+  // Clear any existing session data when the login screen mounts
+  useEffect(() => {
+    const clearSession = async () => {
+      if (hasClearedSession.current) return;
+      
+      try {
+        console.log('Clearing existing session...');
+        await supabase.auth.signOut();
+        await clearStore();
+        hasClearedSession.current = true;
+        console.log('Session cleared successfully');
+      } catch (error) {
+        console.error('Error clearing session:', error);
+      }
+    };
+    clearSession();
+  }, [clearStore]);
 
   const handleLogin = async () => {
     if (!email || !password) {

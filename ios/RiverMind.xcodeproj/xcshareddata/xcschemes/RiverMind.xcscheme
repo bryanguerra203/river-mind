@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "PokerEarningsTracker.app"
-               BlueprintName = "PokerEarningsTracker"
-               ReferencedContainer = "container:PokerEarningsTracker.xcodeproj">
+               BuildableName = "RiverMind.app"
+               BlueprintName = "RiverMind"
+               ReferencedContainer = "container:RiverMind.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "PokerEarningsTrackerTests.xctest"
-               BlueprintName = "PokerEarningsTrackerTests"
-               ReferencedContainer = "container:PokerEarningsTracker.xcodeproj">
+               BuildableName = "RiverMindTests.xctest"
+               BlueprintName = "RiverMindTests"
+               ReferencedContainer = "container:RiverMind.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "PokerEarningsTracker.app"
-            BlueprintName = "PokerEarningsTracker"
-            ReferencedContainer = "container:PokerEarningsTracker.xcodeproj">
+            BuildableName = "RiverMind.app"
+            BlueprintName = "RiverMind"
+            ReferencedContainer = "container:RiverMind.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "PokerEarningsTracker.app"
-            BlueprintName = "PokerEarningsTracker"
-            ReferencedContainer = "container:PokerEarningsTracker.xcodeproj">
+            BuildableName = "RiverMind.app"
+            BlueprintName = "RiverMind"
+            ReferencedContainer = "container:RiverMind.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

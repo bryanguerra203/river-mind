@@ -2,7 +2,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
 import { Stack, Slot, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
 import { colors } from "@/constants/colors";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -27,10 +27,12 @@ export default function RootLayout() {
   const isOnline = useNetworkStatus();
   const { syncWithServer } = useSessionStore();
   const router = useRouter();
+  const segments = useSegments();
   
   const [session, setSession] = useState<Session | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [splashHidden, setSplashHidden] = useState(false);
+  const hasCheckedSession = useRef(false);
 
   // Handle font loading errors
   useEffect(() => {
@@ -48,38 +50,53 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  // Handle session checking
+  // Handle session checking and routing
   useEffect(() => {
-    let mounted = true;
+    if (!loaded) return;
 
     const checkSession = async () => {
+      if (hasCheckedSession.current) return;
+      
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (mounted) {
-          setSession(currentSession);
-          setInitialLoading(false);
+        console.log('Initial session check:', currentSession ? 'Active' : 'No session');
+        
+        setSession(currentSession);
+        setInitialLoading(false);
+        hasCheckedSession.current = true;
+
+        // Only redirect if we're not already on the auth screen
+        const inAuthGroup = segments[0] === '(auth)';
+        if (!currentSession && !inAuthGroup) {
+          console.log('No session, redirecting to login');
+          router.replace('/(auth)/login');
         }
       } catch (e) {
-        console.error("Error getting session on startup:", e);
-        if (mounted) {
-          setInitialLoading(false);
-        }
+        console.error("Error checking session:", e);
+        setSession(null);
+        setInitialLoading(false);
+        hasCheckedSession.current = true;
       }
     };
 
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (mounted) {
-        setSession(newSession);
+      console.log('Auth state changed:', _event);
+      setSession(newSession);
+      
+      // Only redirect if we're not already on the auth screen
+      const inAuthGroup = segments[0] === '(auth)';
+      if (!newSession && !inAuthGroup) {
+        console.log('Session ended, redirecting to login');
+        router.replace('/(auth)/login');
       }
     });
 
     return () => {
-      mounted = false;
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [loaded, segments, router]);
 
   // Handle server sync
   useEffect(() => {
@@ -88,7 +105,6 @@ export default function RootLayout() {
         try {
           await syncWithServer();
         } catch (error: any) {
-          // Check for 403 or session_not_found error from Supabase
           if (error.message && (error.message.includes('403') || error.message.includes('session_not_found'))) {
             console.warn("Session invalidated, signing out and redirecting to login.");
             try {

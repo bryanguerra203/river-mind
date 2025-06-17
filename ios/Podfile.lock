@@ -1,6 +1,8 @@
 PODS:
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
+  - EXApplication (6.1.4):
+    - ExpoModulesCore
   - EXConstants (17.1.4):
     - ExpoModulesCore
   - EXImageLoader (5.1.0):
@@ -37,6 +39,8 @@ PODS:
     - ExpoModulesCore
   - ExpoBlur (14.1.4):
     - ExpoModulesCore
+  - ExpoCrypto (14.1.5):
+    - ExpoModulesCore
   - ExpoFileSystem (18.1.10):
     - ExpoModulesCore
   - ExpoFont (13.3.0):
@@ -62,7 +66,7 @@ PODS:
     - ExpoModulesCore
   - ExpoLocation (18.1.4):
     - ExpoModulesCore
-  - ExpoModulesCore (2.3.12):
+  - ExpoModulesCore (2.4.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1449,6 +1453,8 @@ PODS:
     - ReactCommon/turbomodule/core
   - react-native-html-to-pdf (0.12.0):
     - React-Core
+  - react-native-netinfo (11.4.1):
+    - React-Core
   - react-native-safe-area-context (5.3.0):
     - DoubleConversion
     - glog
@@ -2059,11 +2065,13 @@ PODS:
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
+  - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - EXImageLoader (from `../node_modules/expo-image-loader/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
+  - ExpoCrypto (from `../node_modules/expo-crypto/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
@@ -2120,6 +2128,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-html-to-pdf (from `../node_modules/react-native-html-to-pdf`)
+  - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-view-shot (from `../node_modules/react-native-view-shot`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2176,6 +2185,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
   DoubleConversion:
     :podspec: "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec"
+  EXApplication:
+    :path: "../node_modules/expo-application/ios"
   EXConstants:
     :path: "../node_modules/expo-constants/ios"
   EXImageLoader:
@@ -2186,6 +2197,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-asset/ios"
   ExpoBlur:
     :path: "../node_modules/expo-blur/ios"
+  ExpoCrypto:
+    :path: "../node_modules/expo-crypto/ios"
   ExpoFileSystem:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
@@ -2295,6 +2308,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-html-to-pdf:
     :path: "../node_modules/react-native-html-to-pdf"
+  react-native-netinfo:
+    :path: "../node_modules/@react-native-community/netinfo"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-view-shot:
@@ -2377,11 +2392,13 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
+  EXApplication: b28de982d44768fc593de9d19ca5a7a0e49685b1
   EXConstants: 9dadd19ad77ca066819f723cee0b70a3e2c32eb7
   EXImageLoader: ab4fcf9240cf3636a83c00e3fc5229d692899428
   Expo: 8a8df72c86f71399406dc19cefc012e30209d20a
   ExpoAsset: cac9909bd4c502b54b87b4e7495121c1194b3c5b
   ExpoBlur: 5d95f7ca771a0f3b9618466525dd68e46dc95f3a
+  ExpoCrypto: fcb6a8a08d1929f346cb95eb05a8f7818627177a
   ExpoFileSystem: 3a98ca2a6f13674ecfd97327d1b44a8ace444cbd
   ExpoFont: bee4b78bcec8f68b6b9bee74ed1bf4fb0515d4b4
   ExpoHaptics: 68c215e070f660e0a29c45dcda4f60eeff08aefb
@@ -2392,7 +2409,7 @@ SPEC CHECKSUMS:
   ExpoLinearGradient: 42e58f6db5ebc20b6fbbf7d31013264644ab12a4
   ExpoLinking: d1d3b9a60b1423b0ddd6c6408710dccf62c2b092
   ExpoLocation: 59f4ad84a89c573224200bec7d6c6c727f2dde8a
-  ExpoModulesCore: 0bf5158ae9fb71e575582a8a48dbd26ced42f306
+  ExpoModulesCore: e2e363bcdee87b46f858586d1887ebb215582001
   ExpoPrint: 187f43f5d16bc8db93fb6609707ed40b8e90d3a6
   ExpoSharing: 04b346bdd7c8ea1fa87047ac7bba65c37bde4f51
   ExpoSplashScreen: 6857226652210e6ba47c0b125b4413136914e41a
@@ -2439,6 +2456,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 206115a22168bd42d6ef21acfe5eb5b39589ed53
   React-microtasksnativemodule: 32f7f13d65525e981e9a5b28cebad7d10e0ff711
   react-native-html-to-pdf: 4c5c6e26819fe202971061594058877aa9b25265
+  react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-safe-area-context: 55dbcf556a51092ddf163b29febbc07dc7f14ebb
   react-native-view-shot: 41c5c50c809f1fd61f91c99400b2222c9b80d13f
   React-NativeModulesApple: 6d750bb9829fdf0f02c56e9a68cbb390e1f5de25
@@ -2484,6 +2502,6 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: d15f5aa644c466e917569ac43b19cbf17975239a
 
-PODFILE CHECKSUM: f1324aec85ddc9a7c97d04afaec45204949e86fe
+PODFILE CHECKSUM: 0bbe36b9f36e7cac443eaea09119d5b8721339df
 
 COCOAPODS: 1.16.2
