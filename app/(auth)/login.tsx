@@ -42,37 +42,8 @@ export default function LoginScreen() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    Alert.prompt(
-      'Reset Password',
-      'Enter your email to receive a password reset link:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send',
-          onPress: async (enteredEmail) => {
-            if (!enteredEmail) {
-              Alert.alert('Error', 'Please enter your email address.');
-              return;
-            }
-            try {
-              const { error } = await supabase.auth.resetPasswordForEmail(enteredEmail, {
-                redirectTo: 'rivermind://reset-password', // <--- IMPORTANT: Use your custom scheme here
-              });
-
-              if (error) throw error;
-
-              Alert.alert('Success', 'Password reset link sent to your email!');
-            } catch (error: any) {
-              console.error('Password reset error:', error);
-              Alert.alert('Error', error.message || 'Failed to send reset link.');
-            }
-          },
-        },
-      ],
-      'plain-text', // Input type
-      email // Pre-fill with current email if available
-    );
+  const handleForgotPassword = () => {
+    router.push('/forgot-password');
   };
 
   return (

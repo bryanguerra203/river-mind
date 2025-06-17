@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import NetInfo from '@react-native-community/netinfo';
+import { Alert } from 'react-native';
 
 // Custom AsyncStorage wrapper with logging
 const CustomAsyncStorage = {
@@ -95,6 +96,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
   global: {
     fetch: customFetch,
@@ -130,5 +132,40 @@ export const verifyAuth = async () => {
       userId: null,
       session: null
     };
+  }
+};
+
+// Add error handling in verify.tsx to be more specific about OTP expiration
+const handleVerify = async () => {
+  try {
+    const { error } = await supabase.auth.verifyOtp({
+      email: email as string,
+      token: otpString,
+      type: 'email'
+    });
+
+    if (error) {
+      if (error.message.includes('expired')) {
+        Alert.alert(
+          'Code Expired',
+          'The verification code has expired. Please request a new one.',
+          [
+            {
+              text: 'Request New Code',
+              onPress: handleResendCode
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            }
+          ]
+        );
+        return;
+      }
+      throw error;
+    }
+    // ... rest of the code
+  } catch (error: any) {
+    // ... error handling
   }
 }; 

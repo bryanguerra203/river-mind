@@ -456,6 +456,7 @@ export const useSessionStore = create<SessionState>()(
       syncBankroll: async (userId) => {
         set({ isLoading: true, error: null });
         try {
+          // First check if the bankroll table exists for this user
           const { data: bankrollData, error } = await supabase
             .from('bankroll')
             .select('*')
@@ -463,9 +464,28 @@ export const useSessionStore = create<SessionState>()(
             .single();
 
           if (error) {
-            if (error.code === 'PGRST116') { // No rows found
+            // Handle case where no bankroll exists for new user
+            if (error.code === 'PGRST116') {
+              // Create initial bankroll for new user
+              const initialBankrollData = {
+                user_id: userId,
+                current_amount: 0,
+                initial_amount: 0,
+                last_updated: new Date().toISOString()
+              };
+
+              const { error: insertError } = await supabase
+                .from('bankroll')
+                .insert([initialBankrollData]);
+
+              if (insertError) throw insertError;
+
               set(state => ({
-                bankroll: defaultBankroll,
+                bankroll: {
+                  currentAmount: 0,
+                  initialAmount: 0,
+                  lastUpdated: new Date().toISOString(),
+                },
                 isLoading: false
               }));
               return;
