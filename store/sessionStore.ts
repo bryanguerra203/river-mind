@@ -15,6 +15,7 @@ interface SessionState {
   customStakes: string[];
   isLoading: boolean;
   error: string | null;
+  hasBankroll: boolean;
   
   // Actions
   addSession: (session: Session) => Promise<void>;
@@ -119,6 +120,7 @@ export const useSessionStore = create<SessionState>()(
       customStakes: [],
       isLoading: false,
       error: null,
+      hasBankroll: false,
 
       clearStore: () => {
         // Clear all state
@@ -129,7 +131,8 @@ export const useSessionStore = create<SessionState>()(
           bankroll: defaultBankroll,
           customStakes: [],
           isLoading: false,
-          error: null
+          error: null,
+          hasBankroll: false,
         });
 
         // Clear persisted data from AsyncStorage
@@ -181,16 +184,31 @@ export const useSessionStore = create<SessionState>()(
             endTime: session.endtime,
           })) || [];
 
-          // console.log('Formatted sessions:', formattedSessions);
-
           set((state) => ({
             sessions: formattedSessions,
             stats: calculateSessionStats(formattedSessions),
             isLoading: false
           }));
 
-          // Also sync bankroll
-          await get().syncBankroll(authState.userId);
+          // Only fetch bankroll if there is at least one session
+          if (formattedSessions.length > 0) {
+            const { data: bankrollData, error: bankrollError } = await supabase
+              .from('bankroll')
+              .select('*')
+              .eq('user_id', authState.userId)
+              .single();
+
+            if (!bankrollError && bankrollData) {
+              set({
+                bankroll: {
+                  currentAmount: bankrollData.current_amount || 0,
+                  initialAmount: bankrollData.initial_amount || 0,
+                  lastUpdated: bankrollData.last_updated,
+                },
+                hasBankroll: true,
+              });
+            }
+          }
 
           set({ isLoading: false });
         } catch (error: any) {
@@ -204,18 +222,10 @@ export const useSessionStore = create<SessionState>()(
         try {
           // Get the current user session
           const { data: { user }, error: authError } = await supabase.auth.getUser();
-          
-          // console.log('Auth check:', {
-          //   user: user ? { id: user.id, email: user.email } : null,
-          //   authError,
-          //   session: await supabase.auth.getSession()
-          // });
-          
           if (authError) {
             console.error('Auth error:', authError);
             throw new Error(`Authentication error: ${authError.message}`);
           }
-          
           if (!user) {
             console.error('No user found');
             throw new Error('User not authenticated');
@@ -240,8 +250,6 @@ export const useSessionStore = create<SessionState>()(
             endtime: session.endTime ? new Date(session.endTime).toISOString() : null,
           };
 
-          // console.log('Attempting to insert session:', formattedSession);
-
           // First try a simple insert without select
           const { error: insertError } = await supabase
             .from('sessions')
@@ -255,10 +263,18 @@ export const useSessionStore = create<SessionState>()(
           // After successful insertion, sync sessions to update the local state
           await get().syncWithServer(); 
 
-          // Update bankroll with the new session's profit/loss
-          const profit = session.cashOut - session.buyIn;
+          // If bankroll is missing (initialAmount is 0 or null), set it to the profit from this session (or $0 if loss)
           const currentBankroll = get().bankroll;
-          await get().updateBankroll(currentBankroll.currentAmount + profit);
+          if ((currentBankroll.initialAmount === 0 || currentBankroll.initialAmount === null) && get().sessions.length === 1) {
+            let profit = session.cashOut - session.buyIn;
+            if (profit < 0) profit = 0;
+            await get().updateBankroll(profit);
+            set({ hasBankroll: true });
+          } else {
+            // Update bankroll with the new session's profit/loss
+            const profit = session.cashOut - session.buyIn;
+            await get().updateBankroll(currentBankroll.currentAmount + profit);
+          }
 
           set(state => ({ isLoading: false }));
         } catch (error: any) {
@@ -419,7 +435,6 @@ export const useSessionStore = create<SessionState>()(
         try {
           // Get the current user
           const { data: { user }, error: authError } = await supabase.auth.getUser();
-          
           if (authError) throw authError;
           if (!user) throw new Error('User not authenticated');
 
@@ -454,6 +469,7 @@ export const useSessionStore = create<SessionState>()(
             if (insertError) throw insertError;
           }
 
+          // Update local state and hasBankroll immediately
           set((state) => ({
             bankroll: {
               ...state.bankroll,
@@ -461,7 +477,8 @@ export const useSessionStore = create<SessionState>()(
               initialAmount: existingBankroll?.initial_amount || amount,
               lastUpdated: new Date().toISOString(),
             },
-            isLoading: false
+            isLoading: false,
+            hasBankroll: true,
           }));
         } catch (error: any) {
           console.error('Error updating bankroll:', error);
@@ -568,6 +585,7 @@ export const useSessionStore = create<SessionState>()(
         filters: state.filters,
         bankroll: state.bankroll,
         customStakes: state.customStakes,
+        hasBankroll: state.hasBankroll,
       }),
     }
   )

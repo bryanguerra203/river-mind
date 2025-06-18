@@ -19,6 +19,8 @@ export default function DashboardScreen() {
   const isOnline = useNetworkStatus();
   const [bankrollModalVisible, setBankrollModalVisible] = useState(false);
   const [newBankroll, setNewBankroll] = useState(bankroll.currentAmount.toString());
+  const [showInitialBankrollModal, setShowInitialBankrollModal] = useState(false);
+  const [initialBankrollInput, setInitialBankrollInput] = useState("");
   
   // Get active sessions (status: 'current')
   const activeSessions = sessions.filter(session => session.status === 'current');
@@ -37,6 +39,14 @@ export default function DashboardScreen() {
     if (!isNaN(amount)) {
       updateBankroll(amount);
       setBankrollModalVisible(false);
+    }
+  };
+
+  const handleSetInitialBankroll = () => {
+    const amount = parseFloat(initialBankrollInput);
+    if (!isNaN(amount) && amount > 0) {
+      updateBankroll(amount);
+      setShowInitialBankrollModal(false);
     }
   };
 
@@ -63,24 +73,14 @@ export default function DashboardScreen() {
             onPress={handleAddSession} 
             style={styles.emptyButton}
           />
-
-          <View style={styles.bankrollContainer}>
-            <Text style={styles.sectionTitle}>Bankroll</Text>
-            <TouchableOpacity 
-              style={styles.bankrollCard}
-              onPress={() => setBankrollModalVisible(true)}
-            >
-              <StatsCard 
-                title="Current Bankroll"
-                value={formatCurrency(bankroll.currentAmount)}
-                positive={bankroll.currentAmount > bankroll.initialAmount}
-                negative={bankroll.currentAmount < bankroll.initialAmount}
-              />
-            </TouchableOpacity>
-          </View>
         </View>
       );
     }
+
+    const bestLoc = getBestLocation(sessions);
+    const worstLoc = getWorstLocation(sessions);
+    const bestSession = getBestSession(sessions);
+    const worstSession = getWorstSession(sessions);
 
     return (
       <>
@@ -158,15 +158,15 @@ export default function DashboardScreen() {
           <View style={styles.statsRow}>
             <StatsCard 
               title="Best Location" 
-              value={findBestLocation(sessions).value}
-              subtitle="Most Profitable Venue"
-              positive={findBestLocation(sessions).isPositive}
+              value={bestLoc ? bestLoc.location : 'N/A'}
+              subtitle={bestLoc ? formatCurrency(bestLoc.profit) : 'N/A'}
+              positive={!!bestLoc && bestLoc.profit > 0}
             />
             <StatsCard 
               title="Worst Location" 
-              value={findWorstLocation(sessions).value}
-              subtitle="Least Profitable Venue"
-              negative={true}
+              value={worstLoc ? worstLoc.location : 'N/A'}
+              subtitle={worstLoc ? formatCurrency(worstLoc.profit) : 'N/A'}
+              negative={!!worstLoc}
             />
           </View>
         </View>
@@ -212,6 +212,47 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
       {renderContent()}
+
+      <Modal
+        visible={showInitialBankrollModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowInitialBankrollModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <Pressable 
+            style={styles.modalOverlay}
+            onPress={() => setShowInitialBankrollModal(false)}
+          >
+            <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+              <Text style={styles.modalTitle}>Set Initial Bankroll</Text>
+              <Input
+                label="Initial Bankroll Amount ($)"
+                value={initialBankrollInput}
+                onChangeText={setInitialBankrollInput}
+                keyboardType="numeric"
+                placeholder="Enter initial bankroll amount"
+              />
+              <View style={styles.modalButtons}>
+                <Button
+                  title="Cancel"
+                  variant="outline"
+                  onPress={() => setShowInitialBankrollModal(false)}
+                  style={styles.modalButton}
+                />
+                <Button
+                  title="Set Bankroll"
+                  onPress={handleSetInitialBankroll}
+                  style={styles.modalButton}
+                />
+              </View>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal
         visible={bankrollModalVisible}
@@ -459,4 +500,54 @@ function findWorstLocation(sessions: Session[]): { value: string; isPositive?: b
     value: `${worstLocation}\n${formatCurrency(stats.profit)}`,
     isPositive: stats.profit > 0
   };
+}
+
+// Helper to get best/worst location or N/A
+function getBestLocation(sessions: Session[]) {
+  const locationStats: { [key: string]: { profit: number, display: string } } = {};
+  sessions.forEach((session: Session) => {
+    const profit = session.cashOut - session.buyIn;
+    const locKey = session.location.trim().toLowerCase();
+    if (!locationStats[locKey]) {
+      locationStats[locKey] = { profit: 0, display: session.location };
+    }
+    locationStats[locKey].profit += profit;
+  });
+  const sorted = Object.entries(locationStats).sort(([, a], [, b]) => (b.profit as number) - (a.profit as number));
+  if (sorted.length === 0) return null;
+  const [bestLoc, bestData] = sorted[0];
+  if ((bestData.profit as number) <= 0) return null;
+  return { location: bestData.display, profit: bestData.profit as number };
+}
+
+function getWorstLocation(sessions: Session[]) {
+  const locationStats: { [key: string]: { profit: number, display: string } } = {};
+  sessions.forEach((session: Session) => {
+    const profit = session.cashOut - session.buyIn;
+    const locKey = session.location.trim().toLowerCase();
+    if (!locationStats[locKey]) {
+      locationStats[locKey] = { profit: 0, display: session.location };
+    }
+    locationStats[locKey].profit += profit;
+  });
+  const sorted = Object.entries(locationStats).sort(([, a], [, b]) => (a.profit as number) - (b.profit as number));
+  if (sorted.length === 0) return null;
+  const [worstLoc, worstData] = sorted[0];
+  if ((worstData.profit as number) >= 0) return null;
+  return { location: worstData.display, profit: worstData.profit as number };
+}
+
+// Helper for best/worst session
+function getBestSession(sessions: Session[]) {
+  if (!sessions.length) return null;
+  const best = Math.max(...sessions.map((s: Session) => s.cashOut - s.buyIn));
+  if (best <= 0) return null;
+  return best;
+}
+
+function getWorstSession(sessions: Session[]) {
+  if (!sessions.length) return null;
+  const worst = Math.min(...sessions.map((s: Session) => s.cashOut - s.buyIn));
+  if (worst >= 0) return null;
+  return worst;
 }

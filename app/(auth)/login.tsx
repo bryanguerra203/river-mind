@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -13,25 +13,21 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { syncWithServer, clearStore } = useSessionStore();
-  const hasClearedSession = useRef(false);
+  const [hasClearedSession, setHasClearedSession] = useState(false);
 
-  // Clear any existing session data when the login screen mounts
+  // Only clear session if there is an active session, and only once
   useEffect(() => {
     const clearSession = async () => {
-      if (hasClearedSession.current) return;
-      
-      try {
-        console.log('Clearing existing session...');
+      if (hasClearedSession) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         await supabase.auth.signOut();
         await clearStore();
-        hasClearedSession.current = true;
-        console.log('Session cleared successfully');
-      } catch (error) {
-        console.error('Error clearing session:', error);
       }
+      setHasClearedSession(true);
     };
     clearSession();
-  }, [clearStore]);
+  }, [clearStore, hasClearedSession]);
 
   const handleLogin = async () => {
     if (!email || !password) {
