@@ -2,7 +2,7 @@
 
 ## Contact Support
 If you need help with RiverMind, please contact us at:
-- Email: [Your support email]
+- Email: bryan_jez09@icloud.com
 
 ## Common Issues
 ### App Not Working
