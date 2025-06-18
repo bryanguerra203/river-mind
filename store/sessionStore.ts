@@ -16,6 +16,7 @@ interface SessionState {
   isLoading: boolean;
   error: string | null;
   hasBankroll: boolean;
+  needsSync: boolean;
   
   // Actions
   addSession: (session: Session) => Promise<void>;
@@ -30,6 +31,7 @@ interface SessionState {
   syncWithServer: () => Promise<void>;
   clearStore: () => void;
   syncBankroll: (userId: string) => Promise<void>;
+  setNeedsSync: (value: boolean) => void;
   
   // Computed
   getFilteredSessions: () => Session[];
@@ -121,9 +123,11 @@ export const useSessionStore = create<SessionState>()(
       isLoading: false,
       error: null,
       hasBankroll: false,
+      needsSync: true,
+
+      setNeedsSync: (value: boolean) => set({ needsSync: value }),
 
       clearStore: () => {
-        // Clear all state
         set({
           sessions: [],
           filters: {},
@@ -133,15 +137,15 @@ export const useSessionStore = create<SessionState>()(
           isLoading: false,
           error: null,
           hasBankroll: false,
+          needsSync: true,
         });
-
-        // Clear persisted data from AsyncStorage
         AsyncStorage.removeItem('poker-sessions').catch(error => {
           console.error('Error clearing persisted data:', error);
         });
       },
 
       syncWithServer: async () => {
+        if (!get().needsSync) return;
         set({ isLoading: true, error: null });
         try {
           // Verify authentication first
@@ -187,7 +191,8 @@ export const useSessionStore = create<SessionState>()(
           set((state) => ({
             sessions: formattedSessions,
             stats: calculateSessionStats(formattedSessions),
-            isLoading: false
+            isLoading: false,
+            needsSync: false,
           }));
 
           // Only fetch bankroll if there is at least one session
@@ -276,7 +281,8 @@ export const useSessionStore = create<SessionState>()(
             await get().updateBankroll(currentBankroll.currentAmount + profit);
           }
 
-          set(state => ({ isLoading: false }));
+          set(state => ({ isLoading: false, needsSync: true }));
+          await get().syncWithServer(); // Ensure dashboard updates
         } catch (error: any) {
           console.error('Error adding session:', error);
           set({ error: error.message, isLoading: false });
@@ -350,9 +356,11 @@ export const useSessionStore = create<SessionState>()(
             return { 
               sessions: newSessions,
               stats: newStats,
-              isLoading: false
+              isLoading: false,
+              needsSync: true,
             };
           });
+          await get().syncWithServer(); // Ensure dashboard updates
         } catch (error: any) {
           console.error('Error updating session:', error);
           set({ error: error.message, isLoading: false });
@@ -381,7 +389,9 @@ export const useSessionStore = create<SessionState>()(
             sessions: state.sessions.filter((session) => session.id !== id),
             stats: calculateSessionStats(state.sessions.filter((session) => session.id !== id)),
             isLoading: false,
+            needsSync: true,
           }));
+          await get().syncWithServer(); // Ensure dashboard updates
 
           // Update bankroll after successful deletion
           if (sessionToDelete) {
@@ -479,6 +489,7 @@ export const useSessionStore = create<SessionState>()(
             },
             isLoading: false,
             hasBankroll: true,
+            needsSync: true,
           }));
         } catch (error: any) {
           console.error('Error updating bankroll:', error);

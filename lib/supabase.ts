@@ -7,15 +7,15 @@ import NetInfo from '@react-native-community/netinfo';
 const CustomAsyncStorage = {
   async getItem(key: string) {
     const item = await AsyncStorage.getItem(key);
-    console.log(`AsyncStorage.getItem - Key: ${key}, Value: ${item ? 'present' : 'absent'}`);
+    //console.log(`AsyncStorage.getItem - Key: ${key}, Value: ${item ? 'present' : 'absent'}`);
     return item;
   },
   async setItem(key: string, value: string) {
-    console.log(`AsyncStorage.setItem - Key: ${key}, Value: ${value ? 'present' : 'absent'}`);
+    //console.log(`AsyncStorage.setItem - Key: ${key}, Value: ${value ? 'present' : 'absent'}`);
     await AsyncStorage.setItem(key, value);
   },
   async removeItem(key: string) {
-    console.log(`AsyncStorage.removeItem - Key: ${key}`);
+    //console.log(`AsyncStorage.removeItem - Key: ${key}`);
     await AsyncStorage.removeItem(key);
   },
 };
