@@ -39,7 +39,7 @@ export default function SettingsScreen() {
 
   const handleContactUs = async () => {
     try {
-      const url = 'mailto:bryanjezguerra@gmail.com';
+      const url = 'mailto:developerrivermind@gmail.com';
       const canOpen = await Linking.canOpenURL(url);
       
       if (canOpen) {
