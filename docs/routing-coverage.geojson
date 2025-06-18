@@ -1,23 +1,14 @@
 {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "Worldwide Coverage"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [-180, -90],
-                        [180, -90],
-                        [180, 90],
-                        [-180, 90],
-                        [-180, -90]
-                    ]
-                ]
-            }
-        }
+    "type": "MultiPolygon",
+    "coordinates": [
+        [
+            [
+                [-180, -90],
+                [180, -90],
+                [180, 90],
+                [-180, 90],
+                [-180, -90]
+            ]
+        ]
     ]
 } 
