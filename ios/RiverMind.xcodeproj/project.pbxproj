@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -75,7 +75,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		893495EC2E03566C00F24C63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		898BC8AD2E0369B50012D773 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -85,7 +85,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		893495CA2E03566A00F24C63 /* RiverMindAppClip */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (893495EC2E03566C00F24C63 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RiverMindAppClip; sourceTree = "<group>"; };
+		893495CA2E03566A00F24C63 /* RiverMindAppClip */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (898BC8AD2E0369B50012D773 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = RiverMindAppClip; sourceTree = "<group>"; };
 		893495DA2E03566C00F24C63 /* RiverMindAppClipTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RiverMindAppClipTests; sourceTree = "<group>"; };
 		893495E42E03566C00F24C63 /* RiverMindAppClipUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RiverMindAppClipUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -570,7 +570,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RiverMind/RiverMind.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.0;
 				DEVELOPMENT_TEAM = Z88X7U9RPA;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -607,7 +607,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RiverMind/RiverMind.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.0;
 				DEVELOPMENT_TEAM = Z88X7U9RPA;
 				INFOPLIST_FILE = RiverMind/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -764,7 +764,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_ENTITLEMENTS = RiverMindAppClip/RiverMindAppClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = Z88X7U9RPA;
 				ENABLE_PREVIEWS = YES;
@@ -813,7 +813,7 @@
 				CODE_SIGN_ENTITLEMENTS = RiverMindAppClip/RiverMindAppClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = Z88X7U9RPA;
 				ENABLE_PREVIEWS = YES;
