@@ -33,20 +33,21 @@ const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       // Check network connectivity before making the request
       const netInfo = await NetInfo.fetch();
-      console.log('Network status:', {
-        isConnected: netInfo.isConnected,
-        type: netInfo.type,
-        isInternetReachable: netInfo.isInternetReachable,
-        details: netInfo.details
-      });
+      // console.log('Network status:', 
+      //   {
+      //   isConnected: netInfo.isConnected,
+      //   type: netInfo.type,
+      //   isInternetReachable: netInfo.isInternetReachable,
+      //   details: netInfo.details
+      // });
 
       if (!netInfo.isConnected) {
         throw new Error('No network connection');
       }
 
-      console.log('Making request to:', input);
+      //console.log('Making request to:', input);
       const response = await fetch(input, init);
-      console.log('Response status:', response.status);
+      //console.log('Response status:', response.status);
       
       if (!response.ok) {
         const error = await response.json();

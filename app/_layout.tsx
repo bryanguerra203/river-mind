@@ -82,7 +82,7 @@ export default function RootLayout() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      console.log('Auth state changed:', _event);
+      //console.log('Auth state changed:', _event);
       setSession(newSession);
       
       // Only redirect if we're not already on the auth screen
@@ -105,7 +105,11 @@ export default function RootLayout() {
         try {
           await syncWithServer();
         } catch (error: any) {
-          if (error.message && (error.message.includes('403') || error.message.includes('session_not_found'))) {
+          if (error.message && (
+            error.message.includes('403') || 
+            error.message.includes('session_not_found') ||
+            error.message.includes('user_not_found')
+          )) {
             console.warn("Session invalidated, signing out and redirecting to login.");
             try {
               await supabase.auth.signOut();

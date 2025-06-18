@@ -124,7 +124,7 @@ export default function SessionCard({ session }: SessionCardProps) {
         {isActive && (
           <View style={styles.detailRow}>
             <Clock size={16} color={colors.text.secondary} />
-            <Text style={styles.detailText}>Session Start: {formatTime(session.date)}</Text>
+            <Text style={styles.detailText}>Session Start: {formatTime(session.startTime || session.date)}</Text>
           </View>
         )}
       </View>
