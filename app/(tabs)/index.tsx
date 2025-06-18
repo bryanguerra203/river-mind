@@ -64,14 +64,14 @@ export default function DashboardScreen() {
             style={styles.emptyButton}
           />
 
-          <View style={styles.bankrollContainerEmpty}>
+          <View style={styles.bankrollContainer}>
             <Text style={styles.sectionTitle}>Bankroll</Text>
             <TouchableOpacity 
               style={styles.bankrollCard}
               onPress={() => setBankrollModalVisible(true)}
             >
               <StatsCard 
-                title="Current Bankroll" 
+                title="Current Bankroll"
                 value={formatCurrency(bankroll.currentAmount)}
                 positive={bankroll.currentAmount > bankroll.initialAmount}
                 negative={bankroll.currentAmount < bankroll.initialAmount}
@@ -178,7 +178,7 @@ export default function DashboardScreen() {
             onPress={() => setBankrollModalVisible(true)}
           >
             <StatsCard 
-              title="Current Bankroll" 
+              title="Current Bankroll"
               value={formatCurrency(bankroll.currentAmount)}
               positive={bankroll.currentAmount > bankroll.initialAmount}
               negative={bankroll.currentAmount < bankroll.initialAmount}
@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   emptyContainer: {
-    justifyContent: 'center',
     alignItems: 'flex-start',
+    justifyContent: 'center',
     padding: 24,
     width: '100%',
   },
@@ -311,13 +311,12 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginBottom: 24,
   },
-  bankrollContainerEmpty: {
-    width: '100%',
+  emptyButton: {
+    width: 200,
     marginBottom: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: colors.background.card,
-    borderRadius: 8,
+  },
+  bankrollContainer: {
+    marginBottom: 24,
   },
   bankrollCard: {
     width: '100%',
@@ -340,9 +339,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   metricsContainer: {
-    marginBottom: 24,
-  },
-  bankrollContainer: {
     marginBottom: 24,
   },
   quickActionContainer: {
@@ -381,10 +377,6 @@ const styles = StyleSheet.create({
   },
   locationValue: {
     color: colors.text.primary,
-  },
-  emptyButton: {
-    width: 200,
-    marginBottom: 24,
   },
 });
 
