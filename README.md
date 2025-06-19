@@ -1,2 +1,2 @@
-# rork-poker-earnings-tracker
-Created by Rork
+# RiverMind
+Created by Bryan Guerra
