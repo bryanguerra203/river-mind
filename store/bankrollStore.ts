@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { GameSession, Player, BuyIn, CashOut } from '@/types/bankroll';
 import { generateId } from '@/utils/helpers';
+import { useGuestStore } from './guestStore';
 
 interface BankrollState {
   activeSessions: GameSession[];
@@ -27,6 +28,11 @@ interface BankrollState {
   // Helper functions
   getSession: (sessionId: string) => GameSession | null;
 }
+
+// Helper function to check if user is in guest mode
+const isGuestMode = () => {
+  return useGuestStore.getState().isGuestMode;
+};
 
 export const useBankrollStore = create<BankrollState>()(
   persist(
@@ -79,27 +85,13 @@ export const useBankrollStore = create<BankrollState>()(
           newPlayer.totalBuyIn = player.initialBuyIn;
         }
         
-        set(state => {
-          const updatedSessions = state.activeSessions.map(session => {
-            if (session.id === sessionId) {
-              const updatedPlayers = [...(session.players || []), newPlayer];
-              const totalBuyIns = updatedPlayers.reduce((sum, p) => sum + p.totalBuyIn, 0);
-              const totalCashOuts = updatedPlayers.reduce((sum, p) => sum + p.totalCashOut, 0);
-              const potAmount = totalCashOuts - totalBuyIns;
-              
-              return {
-                ...session,
-                players: updatedPlayers,
-                totalBuyIns,
-                totalCashOuts,
-                potAmount
-              };
-            }
-            return session;
-          });
-          
-          return { activeSessions: updatedSessions };
-        });
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => 
+            session.id === sessionId 
+              ? { ...session, players: [...(session.players || []), newPlayer] }
+              : session
+          )
+        }));
       },
       
       addBuyIn: async (playerId, buyIn) => {
@@ -109,39 +101,28 @@ export const useBankrollStore = create<BankrollState>()(
           created_at: new Date().toISOString()
         };
         
-        set(state => {
-          const updatedSessions = state.activeSessions.map(session => {
-            const updatedPlayers = session.players?.map(player => {
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => ({
+            ...session,
+            players: (session.players || []).map(player => {
               if (player.id === playerId) {
-                const updatedBuyIns = [...player.buyIns, newBuyIn];
-                const totalBuyIn = updatedBuyIns.reduce((sum, bi) => sum + bi.amount, 0);
-                return {
+                const updatedPlayer = {
                   ...player,
-                  buyIns: updatedBuyIns,
-                  totalBuyIn,
-                  profit: player.totalCashOut - totalBuyIn
+                  buyIns: [...player.buyIns, newBuyIn],
+                  totalBuyIn: player.totalBuyIn + buyIn.amount
                 };
+                return updatedPlayer;
               }
               return player;
-            }) || [];
-
-            // Calculate session totals
-            const totalBuyIns = updatedPlayers.reduce((sum, p) => sum + p.totalBuyIn, 0);
-            const totalCashOuts = updatedPlayers.reduce((sum, p) => sum + p.totalCashOut, 0);
-            const potAmount = totalCashOuts - totalBuyIns;
-
-            return {
-              ...session,
-              players: updatedPlayers,
-              totalBuyIns,
-              totalCashOuts,
-              potAmount,
-              updated_at: new Date().toISOString()
-            };
-          });
-          
-          return { activeSessions: updatedSessions };
-        });
+            }),
+            totalBuyIns: (session.players || []).reduce((total, player) => {
+              if (player.id === playerId) {
+                return total + player.totalBuyIn + buyIn.amount;
+              }
+              return total + player.totalBuyIn;
+            }, 0)
+          }))
+        }));
       },
       
       addCashOut: async (sessionId, cashOut) => {
@@ -151,126 +132,112 @@ export const useBankrollStore = create<BankrollState>()(
           created_at: new Date().toISOString()
         };
         
-        set(state => {
-          const updatedSessions = state.activeSessions.map(session => {
-            if (session.id !== sessionId) return session;
-            
-            const updatedPlayers = session.players?.map(player => {
-              if (player.id === cashOut.playerId) {
-                const updatedCashOuts = [...player.cashOuts, newCashOut];
-                const totalCashOut = updatedCashOuts.reduce((sum, co) => sum + co.amount, 0);
-                return {
-                  ...player,
-                  cashOuts: updatedCashOuts,
-                  totalCashOut,
-                  profit: totalCashOut - player.totalBuyIn
-                };
-              }
-              return player;
-            }) || [];
-
-            // Calculate session totals
-            const totalBuyIns = updatedPlayers.reduce((sum, p) => sum + p.totalBuyIn, 0);
-            const totalCashOuts = updatedPlayers.reduce((sum, p) => sum + p.totalCashOut, 0);
-            const potAmount = totalCashOuts - totalBuyIns;
-
-            return {
-              ...session,
-              players: updatedPlayers,
-              totalBuyIns,
-              totalCashOuts,
-              potAmount,
-              updated_at: new Date().toISOString()
-            };
-          });
-          
-          return { activeSessions: updatedSessions };
-        });
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).map(player => {
+                if (player.id === cashOut.playerId) {
+                  const updatedPlayer = {
+                    ...player,
+                    cashOuts: [...player.cashOuts, newCashOut],
+                    totalCashOut: player.totalCashOut + cashOut.amount,
+                    profit: (player.totalCashOut + cashOut.amount) - player.totalBuyIn
+                  };
+                  return updatedPlayer;
+                }
+                return player;
+              });
+              
+              const totalCashOuts = updatedPlayers.reduce((total, player) => total + player.totalCashOut, 0);
+              
+              return {
+                ...session,
+                players: updatedPlayers,
+                totalCashOuts
+              };
+            }
+            return session;
+          })
+        }));
       },
       
       editBuyIn: async (sessionId, playerId, buyInId, amount) => {
-        set(state => {
-          const updatedSessions = state.activeSessions.map(session => {
-            if (session.id !== sessionId) return session;
-            
-            const updatedPlayers = session.players?.map(player => {
-              if (player.id !== playerId) return player;
-              
-              const updatedBuyIns = player.buyIns.map(buyIn => {
-                if (buyIn.id !== buyInId) return buyIn;
-                return { ...buyIn, amount };
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).map(player => {
+                if (player.id === playerId) {
+                  const updatedBuyIns = player.buyIns.map(buyIn => 
+                    buyIn.id === buyInId ? { ...buyIn, amount } : buyIn
+                  );
+                  
+                  const totalBuyIn = updatedBuyIns.reduce((total, buyIn) => total + buyIn.amount, 0);
+                  
+                  return {
+                    ...player,
+                    buyIns: updatedBuyIns,
+                    totalBuyIn,
+                    profit: player.totalCashOut - totalBuyIn
+                  };
+                }
+                return player;
               });
               
-              const totalBuyIn = updatedBuyIns.reduce((sum, bi) => sum + bi.amount, 0);
+              const totalBuyIns = updatedPlayers.reduce((total, player) => total + player.totalBuyIn, 0);
+              
               return {
-                ...player,
-                buyIns: updatedBuyIns,
-                totalBuyIn,
-                profit: player.totalCashOut - totalBuyIn
+                ...session,
+                players: updatedPlayers,
+                totalBuyIns
               };
-            }) || [];
-
-            // Calculate session totals
-            const totalBuyIns = updatedPlayers.reduce((sum, p) => sum + p.totalBuyIn, 0);
-            const totalCashOuts = updatedPlayers.reduce((sum, p) => sum + p.totalCashOut, 0);
-            const potAmount = totalCashOuts - totalBuyIns;
-
-            return {
-              ...session,
-              players: updatedPlayers,
-              totalBuyIns,
-              totalCashOuts,
-              potAmount,
-              updated_at: new Date().toISOString()
-            };
-          });
-          
-          return { activeSessions: updatedSessions };
-        });
+            }
+            return session;
+          })
+        }));
       },
       
       editCashOut: async (sessionId, playerId, cashOutId, amount) => {
-        set(state => {
-          const updatedSessions = state.activeSessions.map(session => {
-            if (session.id !== sessionId) return session;
-            
-            const updatedPlayers = session.players?.map(player => {
-              if (player.id !== playerId) return player;
-              
-              const updatedCashOuts = player.cashOuts.map(cashOut => {
-                if (cashOut.id !== cashOutId) return cashOut;
-                return { ...cashOut, amount };
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).map(player => {
+                if (player.id === playerId) {
+                  const updatedCashOuts = player.cashOuts.map(cashOut => 
+                    cashOut.id === cashOutId ? { ...cashOut, amount } : cashOut
+                  );
+                  
+                  const totalCashOut = updatedCashOuts.reduce((total, cashOut) => total + cashOut.amount, 0);
+                  
+                  return {
+                    ...player,
+                    cashOuts: updatedCashOuts,
+                    totalCashOut,
+                    profit: totalCashOut - player.totalBuyIn
+                  };
+                }
+                return player;
               });
               
-              const totalCashOut = updatedCashOuts.reduce((sum, co) => sum + co.amount, 0);
+              const totalCashOuts = updatedPlayers.reduce((total, player) => total + player.totalCashOut, 0);
+              
               return {
-                ...player,
-                cashOuts: updatedCashOuts,
-                totalCashOut,
-                profit: totalCashOut - player.totalBuyIn
+                ...session,
+                players: updatedPlayers,
+                totalCashOuts
               };
-            }) || [];
-
-            // Calculate session totals
-            const totalBuyIns = updatedPlayers.reduce((sum, p) => sum + p.totalBuyIn, 0);
-            const totalCashOuts = updatedPlayers.reduce((sum, p) => sum + p.totalCashOut, 0);
-            const potAmount = totalCashOuts - totalBuyIns;
-
-            return {
-              ...session,
-              players: updatedPlayers,
-              totalBuyIns,
-              totalCashOuts,
-              potAmount,
-              updated_at: new Date().toISOString()
-            };
-          });
-          
-          return { activeSessions: updatedSessions };
-        });
+            }
+            return session;
+          })
+        }));
       },
       
       loadSessions: async () => {
+        // Skip loading sessions if in guest mode
+        if (isGuestMode()) {
+          console.log('Skipping session loading in guest mode');
+          return;
+        }
+
         set({ isLoading: true, error: null });
         
         try {
@@ -294,15 +261,15 @@ export const useBankrollStore = create<BankrollState>()(
             .order('date', { ascending: false });
             
           if (error) throw error;
-
-          // Format the sessions to match our GameSession type
-          const formattedSessions = sessions?.map(session => ({
+          
+          // Convert database format to our local format
+          const formattedSessions: GameSession[] = sessions.map(session => ({
             id: session.id,
             location: session.location,
             date: session.date,
-            potAmount: parseFloat(session.pot_amount) || 0,
-            totalBuyIns: parseFloat(session.total_buy_ins) || 0,
-            totalCashOuts: parseFloat(session.total_cash_outs) || 0,
+            potAmount: session.pot_amount || 0,
+            totalBuyIns: session.total_buy_ins || 0,
+            totalCashOuts: session.total_cash_outs || 0,
             notes: session.notes,
             isActive: session.is_active,
             duration: session.duration || 0,
@@ -311,37 +278,41 @@ export const useBankrollStore = create<BankrollState>()(
             players: session.players?.map((player: any) => ({
               id: player.id,
               name: player.name,
-              totalBuyIn: parseFloat(player.total_buy_in) || 0,
-              totalCashOut: parseFloat(player.total_cash_out) || 0,
-              profit: parseFloat(player.profit) || 0,
               created_at: player.created_at,
               updated_at: player.updated_at,
               buyIns: player.buyIns?.map((buyIn: any) => ({
                 id: buyIn.id,
-                amount: parseFloat(buyIn.amount) || 0,
+                amount: buyIn.amount,
                 timestamp: buyIn.timestamp,
                 created_at: buyIn.created_at
               })) || [],
               cashOuts: player.cashOuts?.map((cashOut: any) => ({
                 id: cashOut.id,
-                amount: parseFloat(cashOut.amount) || 0,
+                amount: cashOut.amount,
                 timestamp: cashOut.timestamp,
                 created_at: cashOut.created_at
-              })) || []
+              })) || [],
+              totalBuyIn: player.total_buy_in || 0,
+              totalCashOut: player.total_cash_out || 0,
+              profit: player.profit || 0
             })) || []
-          })) || [];
+          }));
           
           set({
             historySessions: formattedSessions,
             isLoading: false
           });
         } catch (error) {
-          console.error('Error loading sessions:', error);
           set({ error: (error as Error).message, isLoading: false });
         }
       },
       
-      saveSession: async (sessionId: string, notes?: string) => {
+      saveSession: async (sessionId, notes) => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot save sessions in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         
         try {
@@ -381,7 +352,7 @@ export const useBankrollStore = create<BankrollState>()(
             console.error('Session error:', sessionError);
             throw new Error(`Failed to save session: ${sessionError.message}`);
           }
-          
+
           // Save players
           for (const player of session.players || []) {
             const { data: savedPlayer, error: playerError } = await supabase
@@ -393,16 +364,16 @@ export const useBankrollStore = create<BankrollState>()(
                 total_cash_out: player.totalCashOut,
                 profit: player.profit,
                 created_at: player.created_at,
-                updated_at: new Date().toISOString()
+                updated_at: player.updated_at
               })
               .select()
               .single();
-
+              
             if (playerError) {
               console.error('Player error:', playerError);
               throw new Error(`Failed to save player: ${playerError.message}`);
             }
-            
+
             // Save buy-ins
             for (const buyIn of player.buyIns) {
               const { error: buyInError } = await supabase
@@ -419,7 +390,7 @@ export const useBankrollStore = create<BankrollState>()(
                 throw new Error(`Failed to save buy-in: ${buyInError.message}`);
               }
             }
-            
+
             // Save cash-outs
             for (const cashOut of player.cashOuts) {
               const { error: cashOutError } = await supabase
@@ -437,48 +408,46 @@ export const useBankrollStore = create<BankrollState>()(
               }
             }
           }
-          
-          // Remove session from active sessions
+
+          // Move session from active to history
           set(state => ({
             activeSessions: state.activeSessions.filter(s => s.id !== sessionId),
+            historySessions: [...state.historySessions, { ...session, isActive: false }],
             isLoading: false
           }));
         } catch (error) {
-          console.error('Error saving session:', error);
           set({ error: (error as Error).message, isLoading: false });
-          throw error;
         }
       },
       
       deleteSession: async (sessionId) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          // Check if session is in active sessions
-          const activeSession = get().activeSessions.find(s => s.id === sessionId);
-          if (activeSession) {
-            set(state => ({
-              activeSessions: state.activeSessions.filter(s => s.id !== sessionId),
-              isLoading: false
-            }));
-            return;
-          }
-          
-          // Delete from database
-          const { error } = await supabase
-            .from('bankroll_sessions')
-            .delete()
-            .eq('id', sessionId);
-            
-          if (error) throw error;
-          
+        // Check if session is in active sessions
+        const activeSession = get().activeSessions.find(s => s.id === sessionId);
+        if (activeSession) {
           set(state => ({
-            historySessions: state.historySessions.filter(s => s.id !== sessionId),
+            activeSessions: state.activeSessions.filter(s => s.id !== sessionId),
             isLoading: false
           }));
-        } catch (error) {
-          set({ error: (error as Error).message, isLoading: false });
+          return;
         }
+        
+        // Check if in guest mode for database operations
+        if (isGuestMode()) {
+          throw new Error('Cannot delete sessions in guest mode. Please log in to save your data.');
+        }
+        
+        // Delete from database
+        const { error } = await supabase
+          .from('bankroll_sessions')
+          .delete()
+          .eq('id', sessionId);
+          
+        if (error) throw error;
+        
+        set(state => ({
+          historySessions: state.historySessions.filter(s => s.id !== sessionId),
+          isLoading: false
+        }));
       },
       
       getSession: (sessionId) => {

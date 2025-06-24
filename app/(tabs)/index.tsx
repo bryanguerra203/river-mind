@@ -4,18 +4,21 @@ import { useRouter } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
+import { useGuestStore } from '@/store/guestStore';
 import { Session } from '@/types/session';
 import ProfitChart from '@/components/ProfitChart';
 import StatsCard from '@/components/StatsCard';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import SessionCard from '@/components/SessionCard';
+import GuestModePrompt from '@/components/GuestModePrompt';
 import { formatCurrency, formatHourlyRate, formatDuration } from '@/utils/formatters';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { sessions, stats, bankroll, initializeStats, updateBankroll, isLoading } = useSessionStore();
+  const { isGuestMode } = useGuestStore();
   const isOnline = useNetworkStatus();
   const [bankrollModalVisible, setBankrollModalVisible] = useState(false);
   const [newBankroll, setNewBankroll] = useState(bankroll.currentAmount.toString());
@@ -49,6 +52,11 @@ export default function DashboardScreen() {
       setShowInitialBankrollModal(false);
     }
   };
+
+  // If in guest mode, show guest mode prompt
+  if (isGuestMode) {
+    return <GuestModePrompt pageName="Dashboard" />;
+  }
 
   const renderContent = () => {
     if (isLoading) {

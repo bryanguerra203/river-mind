@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { colors } from "@/constants/colors";
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSessionStore } from '@/store/sessionStore';
+import { useGuestStore } from '@/store/guestStore';
 import { supabase } from '@/lib/supabase';
 import { View, ActivityIndicator, Text, StyleSheet, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -26,6 +27,7 @@ export default function RootLayout() {
 
   const isOnline = useNetworkStatus();
   const { syncWithServer } = useSessionStore();
+  const { isGuestMode } = useGuestStore();
   const router = useRouter();
   const segments = useSegments();
   
@@ -65,10 +67,10 @@ export default function RootLayout() {
         setInitialLoading(false);
         hasCheckedSession.current = true;
 
-        // Only redirect if we're not already on the auth screen
+        // Only redirect if we're not already on the auth screen and not in guest mode
         const inAuthGroup = segments[0] === '(auth)';
-        if (!currentSession && !inAuthGroup) {
-          console.log('No session, redirecting to login');
+        if (!currentSession && !inAuthGroup && !isGuestMode) {
+          console.log('No session and not in guest mode, redirecting to login');
           router.replace('/(auth)/login');
         }
       } catch (e) {
@@ -85,10 +87,10 @@ export default function RootLayout() {
       //console.log('Auth state changed:', _event);
       setSession(newSession);
       
-      // Only redirect if we're not already on the auth screen
+      // Only redirect if we're not already on the auth screen and not in guest mode
       const inAuthGroup = segments[0] === '(auth)';
-      if (!newSession && !inAuthGroup) {
-        console.log('Session ended, redirecting to login');
+      if (!newSession && !inAuthGroup && !isGuestMode) {
+        console.log('Session ended and not in guest mode, redirecting to login');
         router.replace('/(auth)/login');
       }
     });
@@ -96,7 +98,7 @@ export default function RootLayout() {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [loaded, segments, router]);
+  }, [loaded, segments, router, isGuestMode]);
 
   // Handle server sync
   useEffect(() => {
@@ -144,69 +146,21 @@ export default function RootLayout() {
     );
   }
 
+  // Show main app if user is authenticated OR in guest mode
+  const shouldShowMainApp = session || isGuestMode;
+
   return (
     <>
       <StatusBar style="light" />
-      {session ? (
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.background.primary,
-            },
-            headerTintColor: colors.text.primary,
-            headerTitleStyle: {
-              fontWeight: '600',
-            },
-            contentStyle: {
-              backgroundColor: colors.background.primary,
-            },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen 
-            name="new-session" 
-            options={{ 
-              title: "Add Session",
-              presentation: "modal",
-              headerBackTitle: "Sessions",
-            }} 
-          />
-          <Stack.Screen 
-            name="session/[id]" 
-            options={{ 
-              title: "Session Details",
-              headerBackTitle: "Sessions",
-            }} 
-          />
-          <Stack.Screen 
-            name="edit-session/[id]" 
-            options={{ 
-              title: "Edit Session",
-              presentation: "modal",
-              headerBackTitle: "Sessions",
-            }} 
-          />
-          <Stack.Screen 
-            name="new-bankroll-session" 
-            options={{ 
-              title: "New Poker Session",
-              presentation: "modal",
-              headerBackTitle: "Bankroll",
-            }} 
-          />
-          <Stack.Screen 
-            name="bankroll-session/[id]" 
-            options={{ 
-              title: "Poker Session",
-              headerBackTitle: "Bankroll",
-            }} 
-          />
-        </Stack>
-      ) : (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-        </Stack>
-      )}
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="new-session" />
+        <Stack.Screen name="session/[id]" />
+        <Stack.Screen name="edit-session/[id]" />
+        <Stack.Screen name="new-bankroll-session" />
+        <Stack.Screen name="bankroll-session/[id]" />
+      </Stack>
     </>
   );
 }

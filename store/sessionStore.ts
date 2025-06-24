@@ -6,6 +6,7 @@ import { defaultStakes } from '@/constants/gameTypes';
 import { supabase, verifyAuth } from '@/lib/supabase';
 import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase';
 import { testSupabaseConnection } from '@/lib/testSupabaseConnection';
+import { useGuestStore } from './guestStore';
 
 interface SessionState {
   sessions: Session[];
@@ -112,6 +113,11 @@ const testConnection = async () => {
   }
 };
 
+// Helper function to check if user is in guest mode
+const isGuestMode = () => {
+  return useGuestStore.getState().isGuestMode;
+};
+
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => ({
@@ -145,6 +151,12 @@ export const useSessionStore = create<SessionState>()(
       },
 
       syncWithServer: async () => {
+        // Skip server sync if in guest mode
+        if (isGuestMode()) {
+          console.log('Skipping server sync in guest mode');
+          return;
+        }
+
         if (!get().needsSync) return;
         set({ isLoading: true, error: null });
         try {
@@ -223,6 +235,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       addSession: async (session) => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot add sessions in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         try {
           // Get the current user session
@@ -290,6 +307,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       updateSession: async (id, session) => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot update sessions in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         try {
           const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -368,6 +390,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       deleteSession: async (id) => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot delete sessions in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         try {
           const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -410,6 +437,11 @@ export const useSessionStore = create<SessionState>()(
       clearFilters: () => set({ filters: {} }),
 
       clearAllSessions: async () => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot clear sessions in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         try {
           const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -441,6 +473,11 @@ export const useSessionStore = create<SessionState>()(
       },
       
       updateBankroll: async (amount) => {
+        // Check if in guest mode
+        if (isGuestMode()) {
+          throw new Error('Cannot update bankroll in guest mode. Please log in to save your data.');
+        }
+
         set({ isLoading: true, error: null });
         try {
           // Get the current user
@@ -498,6 +535,12 @@ export const useSessionStore = create<SessionState>()(
       },
       
       syncBankroll: async (userId) => {
+        // Skip bankroll sync if in guest mode
+        if (isGuestMode()) {
+          console.log('Skipping bankroll sync in guest mode');
+          return;
+        }
+
         set({ isLoading: true, error: null });
         try {
           // First check if the bankroll table exists for this user

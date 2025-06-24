@@ -5,17 +5,20 @@ import { useRouter } from 'expo-router';
 import { Plus, Filter, X } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
+import { useGuestStore } from '@/store/guestStore';
 import { Session } from '@/types/session';
 import { formatDate, formatCurrency, formatDuration } from '@/utils/formatters';
 import SessionCard from '@/components/SessionCard';
 import Button from '@/components/Button';
 import SegmentedControl from '@/components/SegmentedControl';
+import GuestModePrompt from '@/components/GuestModePrompt';
 import { trackScreenRender, trackListPerformance, trackFunctionExecution } from '@/utils/performance';
 import { gameTypes } from '@/constants/gameTypes';
 
 export default function SessionsScreen() {
   const router = useRouter();
   const { sessions, stats, initializeStats } = useSessionStore();
+  const { isGuestMode } = useGuestStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isSorting, setIsSorting] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'profit'>('date');
@@ -186,6 +189,11 @@ export default function SessionsScreen() {
     });
     return Array.from(tagSet).sort();
   };
+
+  // If in guest mode, show guest mode prompt
+  if (isGuestMode) {
+    return <GuestModePrompt pageName="Sessions" />;
+  }
 
   const renderFilterModal = () => (
     <Modal

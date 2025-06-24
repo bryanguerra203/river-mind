@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
+import { useGuestStore } from '@/store/guestStore';
+
+export const options = { headerShown: false };
 
 export default function LoginScreen() {
+  const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { syncWithServer, clearStore } = useSessionStore();
+  const { setGuestMode } = useGuestStore();
   const [hasClearedSession, setHasClearedSession] = useState(false);
 
   // Only clear session if there is an active session, and only once
@@ -46,6 +55,9 @@ export default function LoginScreen() {
 
       if (error) throw error;
 
+      // Clear guest mode when user logs in
+      setGuestMode(false);
+
       // After successful login, sync sessions
       await syncWithServer();
       
@@ -69,6 +81,11 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleContinueAsGuest = () => {
+    setGuestMode(true);
+    router.replace('/(tabs)');
   };
 
   const handleForgotPassword = () => {
@@ -154,6 +171,15 @@ export default function LoginScreen() {
           >
             <Text style={styles.signupText}>
               Don't have an account? <Text style={styles.signupTextBold}>Sign up</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={handleContinueAsGuest}
+            style={styles.guestLink}
+          >
+            <Text style={styles.guestText}>
+              <Text style={styles.guestTextBold}>Continue as Guest</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -256,5 +282,16 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  guestLink: {
+    marginTop: 16,
+  },
+  guestText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  guestTextBold: {
+    color: colors.accent.primary,
+    fontWeight: '600',
   },
 }); 

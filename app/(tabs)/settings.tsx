@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Share, Linking, Image,
 import { Trash2, Download, Mail, LogOut } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
+import { useGuestStore } from '@/store/guestStore';
 import * as FileSystem from 'expo-file-system';
 import { formatDate, formatTimeOnly } from '@/utils/formatters';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
+import GuestModePrompt from '@/components/GuestModePrompt';
 
 export default function SettingsScreen() {
   const { clearAllSessions, sessions } = useSessionStore();
+  const { isGuestMode } = useGuestStore();
 
   const handleClearAllSessions = () => {
     Alert.alert(
@@ -69,6 +72,9 @@ export default function SettingsScreen() {
             try {
               // Clear the session store first
               useSessionStore.getState().clearStore();
+              
+              // Clear guest mode
+              useGuestStore.getState().clearGuestMode();
               
               // Then sign out from Supabase
               const { error } = await supabase.auth.signOut();
@@ -142,6 +148,11 @@ export default function SettingsScreen() {
       Alert.alert('Error', 'Failed to export sessions data.');
     }
   };
+
+  // If in guest mode, show guest mode prompt
+  if (isGuestMode) {
+    return <GuestModePrompt pageName="Settings" />;
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>

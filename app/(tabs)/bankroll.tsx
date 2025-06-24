@@ -20,9 +20,11 @@ import {
 } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useBankrollStore } from '@/store/bankrollStore';
+import { useGuestStore } from '@/store/guestStore';
 import { GameSession } from '@/types/bankroll';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import EmptyBankroll from '@/components/bankroll/EmptyBankroll';
+import GuestModePrompt from '@/components/GuestModePrompt';
 
 export default function BankrollScreen() {
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function BankrollScreen() {
     loadSessions,
     isLoading
   } = useBankrollStore();
+  const { isGuestMode } = useGuestStore();
   
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
@@ -78,6 +81,11 @@ export default function BankrollScreen() {
   const closeAllMenus = () => {
     setOpenMenuId(null);
   };
+  
+  // If in guest mode, show guest mode prompt
+  if (isGuestMode) {
+    return <GuestModePrompt pageName="Bankroll" />;
+  }
   
   // Sort history sessions by date (newest first)
   const sortedHistorySessions = [...historySessions].sort(
