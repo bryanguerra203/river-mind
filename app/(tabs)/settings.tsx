@@ -9,6 +9,7 @@ import { formatDate, formatTimeOnly } from '@/utils/formatters';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import GuestModePrompt from '@/components/GuestModePrompt';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const { clearAllSessions, sessions } = useSessionStore();
@@ -149,6 +150,44 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you absolutely sure? This action is irreversible. All your data will be permanently deleted and cannot be recovered.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Call Supabase Edge Function to delete all user data
+              const { data, error } = await supabase.functions.invoke('delete-user-data', {
+                // No body needed, JWT will be used for user context
+                method: 'POST',
+              });
+              if (error) throw error;
+
+              // Sign out from Supabase
+              await supabase.auth.signOut();
+
+              // Clear all local state and cache
+              useSessionStore.getState().clearStore();
+              useGuestStore.getState().clearGuestMode();
+              await AsyncStorage.clear();
+
+              // Navigate to login
+              router.replace('/login');
+            } catch (err: any) {
+              console.error('Error deleting account:', err);
+              Alert.alert('Error', 'Failed to delete account. Please try again or contact support.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   // If in guest mode, show guest mode prompt
   if (isGuestMode) {
     return <GuestModePrompt pageName="Settings" />;
@@ -246,6 +285,20 @@ export default function SettingsScreen() {
           <Text style={styles.infoText}>RiverMind</Text>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Delete Account</Text>
+        <TouchableOpacity 
+          style={styles.deleteAccountButton}
+          onPress={handleDeleteAccount}
+        >
+          <Trash2 size={20} color={colors.accent.danger} />
+          <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
+        </TouchableOpacity>
+        <Text style={styles.deleteAccountDescription}>
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -398,5 +451,29 @@ const styles = StyleSheet.create({
   versionText: {
     color: colors.text.secondary,
     fontSize: 14,
+  },
+  deleteAccountButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    marginBottom: 8,
+  },
+  deleteAccountButtonText: {
+    color: colors.accent.danger,
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  deleteAccountDescription: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    marginTop: 4,
+    marginLeft: 4,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });
