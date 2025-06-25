@@ -28,4 +28,4 @@ We may update our Privacy Policy from time to time. Changes will be posted on th
 ## Contact Us
 If you have any questions about this Privacy Policy, please contact us at:
 
-**Email:** bryan_jez09@icloud.com 
+**Email:** developerrivermind@gmail.com
