@@ -2,7 +2,7 @@
 
 Effective Date: June 18, 2025
 
-RiverMind ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our app.
+RiverMind is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our app.
 
 ## Information We Collect
 - **Personal Information:** We do not collect personal information such as your name, email address, or contact details unless you choose to contact us for support.
