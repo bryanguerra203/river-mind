@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   View, 
   TextInput, 
@@ -24,8 +24,22 @@ export default function Input({
   leftIcon,
   rightIcon,
   style,
+  returnKeyType,
+  keyboardType,
+  blurOnSubmit,
+  onSubmitEditing,
   ...props
 }: InputProps) {
+  const inputRef = useRef<TextInput>(null);
+  
+  // Only add "Done" button for numeric keyboards if no returnKeyType is explicitly set
+  const shouldAddDoneButton = !returnKeyType && (keyboardType === 'numeric' || keyboardType === 'decimal-pad');
+  
+  const handleSubmitEditing = (event: any) => {
+    inputRef.current?.blur();
+    onSubmitEditing?.(event);
+  };
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -36,6 +50,7 @@ export default function Input({
       ]}>
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
         <TextInput
+          ref={inputRef}
           style={[
             styles.input,
             leftIcon ? styles.inputWithLeftIcon : null,
@@ -43,6 +58,9 @@ export default function Input({
             style,
           ]}
           placeholderTextColor={colors.text.tertiary}
+          keyboardType={keyboardType}
+          returnKeyType={shouldAddDoneButton ? 'done' : returnKeyType}
+          onSubmitEditing={shouldAddDoneButton ? handleSubmitEditing : onSubmitEditing}
           {...props}
         />
         {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
