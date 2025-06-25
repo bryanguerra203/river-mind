@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { View, ActivityIndicator, Text, StyleSheet, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Session } from '@supabase/supabase-js';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -150,18 +151,59 @@ export default function RootLayout() {
   const shouldShowMainApp = session || isGuestMode;
 
   return (
-    <>
+    <ThemeProvider value={DarkTheme}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ 
+        headerShown: false, 
+        headerTintColor: colors.text.primary,
+        headerTitleStyle: { color: colors.text.primary },
+        headerStyle: { backgroundColor: colors.background.primary },
+      }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="new-session" />
-        <Stack.Screen name="session/[id]" />
+        <Stack.Screen 
+          name="new-session" 
+          options={{ 
+            title: "Add Session",
+            presentation: "modal",
+            headerBackTitle: "Sessions",
+            gestureEnabled: true,
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="session/[id]" 
+          options={{ 
+            headerShown: true,
+            title: 'Session Details',
+            headerBackTitle: 'Sessions',
+          }} 
+        />
         <Stack.Screen name="edit-session/[id]" />
-        <Stack.Screen name="new-bankroll-session" />
-        <Stack.Screen name="bankroll-session/[id]" />
+        <Stack.Screen 
+          name="new-bankroll-session" 
+          options={{ 
+            headerShown: true,
+            title: 'New Poker Game',
+            headerBackTitle: 'Bankroll',
+            headerTintColor: colors.text.primary,
+            headerTitleStyle: { color: colors.text.primary },
+            headerStyle: { backgroundColor: colors.background.primary },
+          }} 
+        />
+        <Stack.Screen 
+          name="bankroll-session/[id]" 
+          options={{ 
+            headerShown: true,
+            title: 'Poker Game',
+            headerBackTitle: 'Bankroll',
+            headerTintColor: colors.text.primary,
+            headerTitleStyle: { color: colors.text.primary },
+            headerStyle: { backgroundColor: colors.background.primary },
+          }} 
+        />
       </Stack>
-    </>
+    </ThemeProvider>
   );
 }
 

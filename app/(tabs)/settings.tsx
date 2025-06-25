@@ -474,6 +474,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
     lineHeight: 20,
-    textAlign: 'center',
+    textAlign: 'left',
   },
 });

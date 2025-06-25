@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { DollarSign, Clock, MapPin, Tag, X } from 'lucide-react-native';
+import { DollarSign, Clock, MapPin, Tag, X, ChevronLeft } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
 import Input from '@/components/Input';
@@ -19,6 +20,7 @@ import DatePicker from '@/components/DatePicker';
 import { gameTypes, sessionTypes, locationTypes, defaultStakes, sessionStatuses } from '@/constants/gameTypes';
 import { generateId } from '@/utils/helpers';
 import TagInput from '@/components/TagInput';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NewSessionScreen() {
   const router = useRouter();
@@ -117,6 +119,7 @@ export default function NewSessionScreen() {
   
   const handleSubmit = async () => {
     if (sessionStatus === 'past' && !validateForm()) {
+      Alert.alert('Missing Required Fields', 'Fill in required fields before saving.');
       return;
     }
     
@@ -133,6 +136,7 @@ export default function NewSessionScreen() {
       
       setErrors(newErrors);
       if (Object.keys(newErrors).length > 0) {
+        Alert.alert('Missing Required Fields', 'Fill in required fields before saving.');
         return;
       }
     }
@@ -194,6 +198,15 @@ export default function NewSessionScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 140 : 0}
     >
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleCancel}>
+            <ChevronLeft size={28} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Session</Text>
+          <View style={styles.headerButtonPlaceholder} />
+        </View>
+      </SafeAreaView>
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.content}
@@ -413,12 +426,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
+  safeArea: {
+    backgroundColor: colors.background.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingTop: 4,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background.primary,
+    zIndex: 20,
+  },
+  headerButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerButtonPlaceholder: {
+    width: 44,
+    height: 44,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'center',
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   content: {
     padding: 16,
-    paddingTop: 60,
     paddingBottom: 32,
   },
   formSection: {

@@ -152,9 +152,10 @@ export default function BankrollSessionScreen() {
   };
   
   // Calculate session stats
-  const totalBuyIn = session.totalBuyIns;
-  const totalCashOut = session.totalCashOuts;
+  const totalBuyIn = session.players?.reduce((total, player) => total + player.totalBuyIn, 0) || 0;
+  const totalCashOut = session.players?.reduce((total, player) => total + player.totalCashOut, 0) || 0;
   const sessionProfit = totalCashOut - totalBuyIn;
+  const potAmount = totalBuyIn - totalCashOut;
   const activePlayers = session.players?.filter(p => p.cashOuts.length === 0).length || 0;
   const cashedOutPlayers = session.players?.filter(p => p.cashOuts.length > 0).length || 0;
   
@@ -229,7 +230,7 @@ export default function BankrollSessionScreen() {
               <View style={styles.statHeader}>
                 <Text style={styles.statTitle}>Pot Amount</Text>
               </View>
-              <Text style={styles.potAmount}>{formatCurrency(session.potAmount)}</Text>
+              <Text style={styles.potAmount}>{formatCurrency(potAmount)}</Text>
             </View>
             
             <View style={styles.statsRow}>
