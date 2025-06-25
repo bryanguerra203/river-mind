@@ -8,8 +8,10 @@ import {
   KeyboardAvoidingView, 
   Platform,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { Session } from '@/types/session';
 import { useSessionStore } from '@/store/sessionStore';
@@ -81,8 +83,14 @@ export default function EndSessionModal({ visible, onClose, session }: EndSessio
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.header}>
-              <Text style={styles.modalTitle}>End Session</Text>
-              <Text style={styles.subtitle}>Complete your poker session</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <X size={24} color={colors.text.secondary} />
+              </TouchableOpacity>
+              <View style={styles.headerContent}>
+                <Text style={styles.modalTitle}>End Session</Text>
+                <Text style={styles.subtitle}>Complete your poker session</Text>
+              </View>
+              <View style={styles.closeButtonPlaceholder} />
             </View>
             
             <ScrollView 
@@ -188,6 +196,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   modalTitle: {
     color: colors.text.primary,
@@ -272,5 +282,18 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     flex: 1,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerContent: {
+    flex: 1,
+  },
+  closeButtonPlaceholder: {
+    width: 40,
+    height: 40,
   },
 });
