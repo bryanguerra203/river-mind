@@ -20,7 +20,7 @@ We do not sell, trade, or otherwise transfer your information to outside parties
 We take reasonable measures to protect your information. However, no method of transmission over the Internet or electronic storage is 100% secure.
 
 ## Children's Privacy
-RiverMind does not knowingly collect information from children under 13. If you believe we have inadvertently collected such information, please contact us at bryan_jez09@icloud.com.
+RiverMind does not knowingly collect information from children under 13. If you believe we have inadvertently collected such information, please contact us at developerrivermind@gmail.com.
 
 ## Changes to This Policy
 We may update our Privacy Policy from time to time. Changes will be posted on this page with an updated effective date.
