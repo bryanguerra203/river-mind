@@ -131,35 +131,46 @@ export const useSessionStore = create<SessionState>()(
       hasBankroll: false,
       needsSync: true,
 
-      setNeedsSync: (value: boolean) => set({ needsSync: value }),
+      setNeedsSync: (value: boolean) => {
+        try {
+          set({ needsSync: value });
+        } catch (error) {
+          console.error('Error setting needsSync:', error);
+        }
+      },
 
       clearStore: () => {
-        set({
-          sessions: [],
-          filters: {},
-          stats: defaultStats,
-          bankroll: defaultBankroll,
-          customStakes: [],
-          isLoading: false,
-          error: null,
-          hasBankroll: false,
-          needsSync: true,
-        });
-        AsyncStorage.removeItem('poker-sessions').catch(error => {
-          console.error('Error clearing persisted data:', error);
-        });
+        try {
+          set({
+            sessions: [],
+            filters: {},
+            stats: defaultStats,
+            bankroll: defaultBankroll,
+            customStakes: [],
+            isLoading: false,
+            error: null,
+            hasBankroll: false,
+            needsSync: true,
+          });
+          AsyncStorage.removeItem('poker-sessions').catch(error => {
+            console.error('Error clearing persisted data:', error);
+          });
+        } catch (error) {
+          console.error('Error clearing store:', error);
+        }
       },
 
       syncWithServer: async () => {
-        // Skip server sync if in guest mode
-        if (isGuestMode()) {
-          console.log('Skipping server sync in guest mode');
-          return;
-        }
-
-        if (!get().needsSync) return;
-        set({ isLoading: true, error: null });
         try {
+          // Skip server sync if in guest mode
+          if (isGuestMode()) {
+            console.log('Skipping server sync in guest mode');
+            return;
+          }
+
+          if (!get().needsSync) return;
+          set({ isLoading: true, error: null });
+          
           // Verify authentication first
           const authState = await verifyAuth();
           if (!authState.isAuthenticated || !authState.userId) {
