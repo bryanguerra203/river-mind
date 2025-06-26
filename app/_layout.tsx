@@ -179,7 +179,17 @@ export default function RootLayout() {
             headerBackTitle: 'Sessions',
           }} 
         />
-        <Stack.Screen name="edit-session/[id]" />
+        <Stack.Screen 
+          name="edit-session/[id]" 
+          options={{ 
+            headerShown: true,
+            title: 'Edit Session',
+            headerBackTitle: 'Sessions',
+            headerTintColor: colors.text.primary,
+            headerTitleStyle: { color: colors.text.primary },
+            headerStyle: { backgroundColor: colors.background.primary },
+          }} 
+        />
         <Stack.Screen 
           name="new-bankroll-session" 
           options={{ 

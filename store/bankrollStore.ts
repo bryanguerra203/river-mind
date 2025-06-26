@@ -19,6 +19,9 @@ interface BankrollState {
   addCashOut: (sessionId: string, cashOut: Omit<CashOut, 'id' | 'created_at'>) => Promise<void>;
   editBuyIn: (sessionId: string, playerId: string, buyInId: string, amount: number) => Promise<void>;
   editCashOut: (sessionId: string, playerId: string, cashOutId: string, amount: number) => Promise<void>;
+  deleteBuyIn: (sessionId: string, playerId: string, buyInId: string) => Promise<void>;
+  deleteCashOut: (sessionId: string, playerId: string, cashOutId: string) => Promise<void>;
+  deletePlayer: (sessionId: string, playerId: string) => Promise<void>;
   
   // Database operations
   loadSessions: () => Promise<void>;
@@ -109,7 +112,8 @@ export const useBankrollStore = create<BankrollState>()(
                 const updatedPlayer = {
                   ...player,
                   buyIns: [...player.buyIns, newBuyIn],
-                  totalBuyIn: player.totalBuyIn + buyIn.amount
+                  totalBuyIn: player.totalBuyIn + buyIn.amount,
+                  profit: player.totalCashOut - (player.totalBuyIn + buyIn.amount)
                 };
                 return updatedPlayer;
               }
@@ -223,6 +227,89 @@ export const useBankrollStore = create<BankrollState>()(
               return {
                 ...session,
                 players: updatedPlayers,
+                totalCashOuts
+              };
+            }
+            return session;
+          })
+        }));
+      },
+      
+      deleteBuyIn: async (sessionId, playerId, buyInId) => {
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).map(player => {
+                if (player.id === playerId) {
+                  const updatedBuyIns = player.buyIns.filter(buyIn => buyIn.id !== buyInId);
+                  const totalBuyIn = updatedBuyIns.reduce((total, buyIn) => total + buyIn.amount, 0);
+                  
+                  return {
+                    ...player,
+                    buyIns: updatedBuyIns,
+                    totalBuyIn,
+                    profit: player.totalCashOut - totalBuyIn
+                  };
+                }
+                return player;
+              });
+              
+              const totalBuyIns = updatedPlayers.reduce((total, player) => total + player.totalBuyIn, 0);
+              
+              return {
+                ...session,
+                players: updatedPlayers,
+                totalBuyIns
+              };
+            }
+            return session;
+          })
+        }));
+      },
+      
+      deleteCashOut: async (sessionId, playerId, cashOutId) => {
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).map(player => {
+                if (player.id === playerId) {
+                  const updatedCashOuts = player.cashOuts.filter(cashOut => cashOut.id !== cashOutId);
+                  const totalCashOut = updatedCashOuts.reduce((total, cashOut) => total + cashOut.amount, 0);
+                  
+                  return {
+                    ...player,
+                    cashOuts: updatedCashOuts,
+                    totalCashOut
+                  };
+                }
+                return player;
+              });
+              
+              const totalCashOuts = updatedPlayers.reduce((total, player) => total + player.totalCashOut, 0);
+              
+              return {
+                ...session,
+                players: updatedPlayers,
+                totalCashOuts
+              };
+            }
+            return session;
+          })
+        }));
+      },
+      
+      deletePlayer: async (sessionId, playerId) => {
+        set(state => ({
+          activeSessions: state.activeSessions.map(session => {
+            if (session.id === sessionId) {
+              const updatedPlayers = (session.players || []).filter(player => player.id !== playerId);
+              const totalBuyIns = updatedPlayers.reduce((total, player) => total + player.totalBuyIn, 0);
+              const totalCashOuts = updatedPlayers.reduce((total, player) => total + player.totalCashOut, 0);
+              
+              return {
+                ...session,
+                players: updatedPlayers,
+                totalBuyIns,
                 totalCashOuts
               };
             }

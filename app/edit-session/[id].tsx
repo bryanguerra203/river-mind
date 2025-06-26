@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { DollarSign, Clock, MapPin, Tag, X } from 'lucide-react-native';
+import { DollarSign, Clock, MapPin, Tag, ChevronLeft } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useSessionStore } from '@/store/sessionStore';
 import Input from '@/components/Input';
@@ -18,6 +18,7 @@ import Button from '@/components/Button';
 import DatePicker from '@/components/DatePicker';
 import { gameTypes, sessionTypes, locationTypes } from '@/constants/gameTypes';
 import TagInput from '@/components/TagInput';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function EditSessionScreen() {
   const { id } = useLocalSearchParams();
@@ -172,163 +173,165 @@ export default function EditSessionScreen() {
   };
   
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100}
-    >
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Session Details</Text>
-          
-          <DatePicker
-            label="Date"
-            value={date}
-            onChange={setDate}
-            error={errors.date}
-          />
-          
-          <Select
-            label="Game Type"
-            placeholder="Select game type"
-            options={gameTypes}
-            value={gameType}
-            onChange={setGameType}
-            error={errors.gameType}
-          />
-          
-          <Select
-            label="Session Type"
-            placeholder="Select session type"
-            options={sessionTypes}
-            value={sessionType}
-            onChange={setSessionType}
-            error={errors.sessionType}
-          />
-        </View>
-        
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          
-          <Select
-            label="Location Type"
-            placeholder="Live or Online"
-            options={locationTypes}
-            value={locationType}
-            onChange={setLocationType}
-            error={errors.locationType}
-          />
-          
-          <Input
-            label="Location"
-            placeholder="Casino name or poker site"
-            value={location}
-            onChangeText={setLocation}
-            error={errors.location}
-            leftIcon={<MapPin size={20} color={colors.text.secondary} />}
-          />
-        </View>
-        
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Financial</Text>
-          
-          <Input
-            label="Stakes"
-            placeholder="e.g., 1/2, 2/5, $200 MTT"
-            value={stakes}
-            onChangeText={setStakes}
-            error={errors.stakes}
-          />
-          
-          <Input
-            label="Buy-in ($)"
-            placeholder="Total amount bought in"
-            value={buyIn}
-            onChangeText={setBuyIn}
-            keyboardType="numeric"
-            error={errors.buyIn}
-            leftIcon={<DollarSign size={20} color={colors.text.secondary} />}
-          />
-          
-          <Input
-            label="Cash Out ($)"
-            placeholder="Total amount cashed out"
-            value={cashOut}
-            onChangeText={setCashOut}
-            keyboardType="numeric"
-            error={errors.cashOut}
-            leftIcon={<DollarSign size={20} color={colors.text.secondary} />}
-          />
-          
-          <View style={styles.durationContainer}>
-            <Text style={styles.label}>Duration</Text>
-            <View style={styles.durationInputs}>
-              <Input
-                placeholder="Hours"
-                value={hours}
-                onChangeText={setHours}
-                keyboardType="numeric"
-                error={errors.hours}
-                containerStyle={styles.durationInput}
-                leftIcon={<Clock size={20} color={colors.text.secondary} />}
-              />
-              <Input
-                placeholder="Minutes"
-                value={minutes}
-                onChangeText={setMinutes}
-                keyboardType="numeric"
-                error={errors.minutes}
-                containerStyle={styles.durationInput}
-              />
-            </View>
-            {errors.duration && (
-              <Text style={styles.errorText}>{errors.duration}</Text>
-            )}
-          </View>
-        </View>
-        
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Notes & Tags</Text>
-          
-          <Input
-            label="Notes"
-            placeholder="Any thoughts about this session"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            style={styles.notesInput}
-          />
-          
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Tags</Text>
-            <TagInput
-              value={tags}
-              onChange={setTags}
-              placeholder="Add tags (e.g., 'good game', 'tough table')"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={100}
+      >
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Session Details</Text>
+            
+            <DatePicker
+              label="Date"
+              value={date}
+              onChange={setDate}
+              error={errors.date}
+            />
+            
+            <Select
+              label="Game Type"
+              placeholder="Select game type"
+              options={gameTypes}
+              value={gameType}
+              onChange={setGameType}
+              error={errors.gameType}
+            />
+            
+            <Select
+              label="Session Type"
+              placeholder="Select session type"
+              options={sessionTypes}
+              value={sessionType}
+              onChange={setSessionType}
+              error={errors.sessionType}
             />
           </View>
-        </View>
-        
-        <View style={styles.buttonContainer}>
-          <Button 
-            title="Cancel" 
-            onPress={handleCancel} 
-            variant="outline"
-            style={styles.cancelButton}
-            disabled={isLoading}
-          />
-          <Button 
-            title="Save Changes" 
-            onPress={handleSubmit} 
-            style={styles.saveButton}
-            loading={isLoading}
-            disabled={isLoading}
-          />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            
+            <Select
+              label="Location Type"
+              placeholder="Live or Online"
+              options={locationTypes}
+              value={locationType}
+              onChange={setLocationType}
+              error={errors.locationType}
+            />
+            
+            <Input
+              label="Location"
+              placeholder="Casino name or poker site"
+              value={location}
+              onChangeText={setLocation}
+              error={errors.location}
+              leftIcon={<MapPin size={20} color={colors.text.secondary} />}
+            />
+          </View>
+          
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Financial</Text>
+            
+            <Input
+              label="Stakes"
+              placeholder="e.g., 1/2, 2/5, $200 MTT"
+              value={stakes}
+              onChangeText={setStakes}
+              error={errors.stakes}
+            />
+            
+            <Input
+              label="Buy-in ($)"
+              placeholder="Total amount bought in"
+              value={buyIn}
+              onChangeText={setBuyIn}
+              keyboardType="numeric"
+              error={errors.buyIn}
+              leftIcon={<DollarSign size={20} color={colors.text.secondary} />}
+            />
+            
+            <Input
+              label="Cash Out ($)"
+              placeholder="Total amount cashed out"
+              value={cashOut}
+              onChangeText={setCashOut}
+              keyboardType="numeric"
+              error={errors.cashOut}
+              leftIcon={<DollarSign size={20} color={colors.text.secondary} />}
+            />
+            
+            <View style={styles.durationContainer}>
+              <Text style={styles.label}>Duration</Text>
+              <View style={styles.durationInputs}>
+                <Input
+                  placeholder="Hours"
+                  value={hours}
+                  onChangeText={setHours}
+                  keyboardType="numeric"
+                  error={errors.hours}
+                  containerStyle={styles.durationInput}
+                  leftIcon={<Clock size={20} color={colors.text.secondary} />}
+                />
+                <Input
+                  placeholder="Minutes"
+                  value={minutes}
+                  onChangeText={setMinutes}
+                  keyboardType="numeric"
+                  error={errors.minutes}
+                  containerStyle={styles.durationInput}
+                />
+              </View>
+              {errors.duration && (
+                <Text style={styles.errorText}>{errors.duration}</Text>
+              )}
+            </View>
+          </View>
+          
+          <View style={styles.formSection}>
+            <Text style={styles.sectionTitle}>Notes & Tags</Text>
+            
+            <Input
+              label="Notes"
+              placeholder="Any thoughts about this session"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              style={styles.notesInput}
+            />
+            
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Tags</Text>
+              <TagInput
+                value={tags}
+                onChange={setTags}
+                placeholder="Add tags (e.g., 'good game', 'tough table')"
+              />
+            </View>
+          </View>
+          
+          <View style={styles.buttonContainer}>
+            <Button 
+              title="Cancel" 
+              onPress={handleCancel} 
+              variant="outline"
+              style={styles.cancelButton}
+              disabled={isLoading}
+            />
+            <Button 
+              title="Save Changes" 
+              onPress={handleSubmit} 
+              style={styles.saveButton}
+              loading={isLoading}
+              disabled={isLoading}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -408,5 +411,8 @@ const styles = StyleSheet.create({
     color: colors.accent.danger,
     fontSize: 12,
     marginTop: 4,
+  },
+  keyboardContainer: {
+    flex: 1,
   },
 });

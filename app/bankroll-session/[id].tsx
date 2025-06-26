@@ -42,7 +42,10 @@ export default function BankrollSessionScreen() {
   const { 
     getSession, 
     deleteSession,
-    saveSession
+    saveSession,
+    deleteBuyIn,
+    deleteCashOut,
+    deletePlayer
   } = useBankrollStore();
   
   const [session, setSession] = useState(getSession(id as string));
@@ -109,6 +112,60 @@ export default function BankrollSessionScreen() {
     setShowEditCashOutModal(true);
   };
   
+  const handleDeleteBuyIn = (player: Player, buyIn: BuyIn) => {
+    Alert.alert(
+      "Delete Buy-in",
+      `Are you sure you want to delete this $${buyIn.amount} buy-in? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: () => {
+            deleteBuyIn(session.id, player.id, buyIn.id);
+          }
+        }
+      ]
+    );
+  };
+  
+  const handleDeleteCashOut = (player: Player, cashOut: CashOut) => {
+    Alert.alert(
+      "Delete Cash Out",
+      `Are you sure you want to delete this $${cashOut.amount} cash out? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: () => {
+            deleteCashOut(session.id, player.id, cashOut.id);
+          }
+        }
+      ]
+    );
+  };
+  
+  const handleDeletePlayer = (player: Player) => {
+    const buyInCount = player.buyIns.length;
+    const cashOutCount = player.cashOuts.length;
+    
+    Alert.alert(
+      "Delete Player",
+      `Are you sure you want to delete ${player.name}? This will remove all their buy-ins (${buyInCount}) and cash-outs (${cashOutCount}). This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete Player", 
+          style: "destructive",
+          onPress: () => {
+            deletePlayer(session.id, player.id);
+          }
+        }
+      ]
+    );
+  };
+  
   const handleEndSession = async (notes: string) => {
     try {
       setIsSaving(true);
@@ -149,6 +206,30 @@ export default function BankrollSessionScreen() {
   
   const toggleDeleteMenu = () => {
     setShowDeleteMenu(!showDeleteMenu);
+  };
+  
+  const getPlayerStatus = (player: Player) => {
+    // If no buy-ins, player is not active
+    if (player.buyIns.length === 0) {
+      return { status: 'Not Playing', isActive: false };
+    }
+    
+    // If no cash-outs, player is active
+    if (player.cashOuts.length === 0) {
+      return { status: 'Active', isActive: true };
+    }
+    
+    // Check if there are buy-ins after the latest cash-out
+    const latestCashOutTime = Math.max(...player.cashOuts.map(co => new Date(co.timestamp).getTime()));
+    const hasBuyInsAfterCashOut = player.buyIns.some(bi => new Date(bi.timestamp).getTime() > latestCashOutTime);
+    
+    if (hasBuyInsAfterCashOut) {
+      return { status: 'Active', isActive: true };
+    }
+    
+    // If the last action was a cash-out (no buy-ins after latest cash-out), player is cashed out
+    // regardless of current balance (positive or negative)
+    return { status: 'Cashed Out', isActive: false };
   };
   
   // Calculate session stats
@@ -297,11 +378,32 @@ export default function BankrollSessionScreen() {
                     <View style={styles.playerInfo}>
                       <View style={styles.playerNameContainer}>
                         <Text style={styles.playerName}>{player.name}</Text>
-                        {expandedPlayers[player.id] ? (
-                          <ChevronUp size={16} color={colors.text.secondary} />
-                        ) : (
-                          <ChevronDown size={16} color={colors.text.secondary} />
-                        )}
+                        {(() => {
+                          const { status, isActive } = getPlayerStatus(player);
+                          let badgeStyle = styles.cashedOutBadge; // default
+                          
+                          if (status === 'Active') {
+                            badgeStyle = styles.activeBadge;
+                          } else if (status === 'Not Playing') {
+                            badgeStyle = styles.notPlayingBadge;
+                          }
+                          
+                          return (
+                            <View style={[
+                              styles.statusBadge,
+                              badgeStyle
+                            ]}>
+                              <Text style={styles.statusText}>{status}</Text>
+                            </View>
+                          );
+                        })()}
+                        <View style={styles.chevronContainer}>
+                          {expandedPlayers[player.id] ? (
+                            <ChevronUp size={16} color={colors.text.secondary} />
+                          ) : (
+                            <ChevronDown size={16} color={colors.text.secondary} />
+                          )}
+                        </View>
                       </View>
                       <View style={styles.playerStats}>
                         <View style={styles.playerStat}>
@@ -336,8 +438,18 @@ export default function BankrollSessionScreen() {
                     </View>
                     
                     <View style={styles.playerActions}>
-                      {session.isActive && player.cashOuts.length === 0 && (
+                      {session.isActive && (
                         <View style={styles.actionButtons}>
+                          {getPlayerStatus(player).isActive && (
+                            <Button 
+                              title="Cash Out" 
+                              variant="outline"
+                              size="small"
+                              onPress={() => handleCashOutPlayer(player)}
+                              style={styles.cashOutButton}
+                            />
+                          )}
+                          
                           <TouchableOpacity 
                             style={styles.buyInButton}
                             onPress={() => handleAddBuyIn(player)}
@@ -345,13 +457,12 @@ export default function BankrollSessionScreen() {
                             <PlusCircle size={18} color={colors.accent.primary} />
                           </TouchableOpacity>
                           
-                          <Button 
-                            title="Cash Out" 
-                            variant="outline"
-                            size="small"
-                            onPress={() => handleCashOutPlayer(player)}
-                            style={styles.cashOutButton}
-                          />
+                          <TouchableOpacity 
+                            style={styles.deletePlayerButton}
+                            onPress={() => handleDeletePlayer(player)}
+                          >
+                            <Trash2 size={16} color={colors.accent.danger} />
+                          </TouchableOpacity>
                         </View>
                       )}
                     </View>
@@ -373,8 +484,19 @@ export default function BankrollSessionScreen() {
                               <Text style={styles.buyInAmount}>{formatCurrency(buyIn.amount)}</Text>
                               <Text style={styles.buyInTime}>{formatTime(buyIn.timestamp)}</Text>
                               {session.isActive && (
-                                <View style={styles.editBuyInIcon}>
-                                  <Edit2 size={14} color={colors.accent.primary} />
+                                <View style={styles.buyInActions}>
+                                  <TouchableOpacity 
+                                    style={styles.editBuyInIcon}
+                                    onPress={() => handleEditBuyIn(player, buyIn)}
+                                  >
+                                    <Edit2 size={14} color={colors.accent.primary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity 
+                                    style={styles.deleteBuyInIcon}
+                                    onPress={() => handleDeleteBuyIn(player, buyIn)}
+                                  >
+                                    <Trash2 size={14} color={colors.accent.danger} />
+                                  </TouchableOpacity>
                                 </View>
                               )}
                             </TouchableOpacity>
@@ -398,8 +520,19 @@ export default function BankrollSessionScreen() {
                               <Text style={styles.cashOutAmount}>{formatCurrency(cashOut.amount)}</Text>
                               <Text style={styles.cashOutTime}>{formatTime(cashOut.timestamp)}</Text>
                               {session.isActive && (
-                                <View style={styles.editCashOutIcon}>
-                                  <Edit2 size={14} color={colors.accent.primary} />
+                                <View style={styles.cashOutActions}>
+                                  <TouchableOpacity 
+                                    style={styles.editCashOutIcon}
+                                    onPress={() => handleEditCashOut(player, cashOut)}
+                                  >
+                                    <Edit2 size={14} color={colors.accent.primary} />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity 
+                                    style={styles.deleteCashOutIcon}
+                                    onPress={() => handleDeleteCashOut(player, cashOut)}
+                                  >
+                                    <Trash2 size={14} color={colors.accent.danger} />
+                                  </TouchableOpacity>
                                 </View>
                               )}
                             </TouchableOpacity>
@@ -707,6 +840,10 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  cashOutButton: {
+    minWidth: 100,
   },
   buyInButton: {
     width: 36,
@@ -715,10 +852,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(33, 150, 243, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
-  },
-  cashOutButton: {
-    minWidth: 100,
   },
   buyInsContainer: {
     padding: 16,
@@ -755,7 +888,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.tertiary,
   },
+  buyInActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   editBuyInIcon: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  deleteBuyInIcon: {
     marginLeft: 8,
     padding: 4,
   },
@@ -799,7 +940,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.tertiary,
   },
+  cashOutActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   editCashOutIcon: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  deleteCashOutIcon: {
     marginLeft: 8,
     padding: 4,
   },
@@ -862,5 +1011,36 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontWeight: '600',
+  },
+  statusBadge: {
+    backgroundColor: colors.accent.warning,
+    borderRadius: 12,
+    padding: 4,
+    marginLeft: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.background.primary,
+  },
+  activeBadge: {
+    backgroundColor: colors.accent.warning,
+  },
+  cashedOutBadge: {
+    backgroundColor: colors.accent.success,
+  },
+  notPlayingBadge: {
+    backgroundColor: colors.accent.danger,
+  },
+  chevronContainer: {
+    marginLeft: 8,
+  },
+  deletePlayerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
