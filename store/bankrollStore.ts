@@ -13,7 +13,7 @@ interface BankrollState {
   error: string | null;
   
   // Local storage operations
-  createSession: (session: Omit<GameSession, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  createSession: (session: Omit<GameSession, 'id' | 'created_at' | 'updated_at'>) => Promise<string>;
   addPlayer: (sessionId: string, player: { name: string; initialBuyIn?: number }) => Promise<void>;
   addBuyIn: (playerId: string, buyIn: Omit<BuyIn, 'id' | 'created_at'>) => Promise<void>;
   addCashOut: (sessionId: string, cashOut: Omit<CashOut, 'id' | 'created_at'>) => Promise<void>;
@@ -61,6 +61,7 @@ export const useBankrollStore = create<BankrollState>()(
         set(state => ({
           activeSessions: [...state.activeSessions, newSession]
         }));
+        return newSession.id;
       },
       
       addPlayer: async (sessionId, player) => {

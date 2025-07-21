@@ -52,10 +52,7 @@ export default function NewBankrollSessionScreen() {
         isActive: true
       };
       
-      await createSession(newSession);
-      
-      // Get the session ID from the store
-      const sessionId = useBankrollStore.getState().activeSessions[0].id;
+      const sessionId = await createSession(newSession);
       
       // Navigate to the session screen
       router.replace(`/bankroll-session/${sessionId}`);
