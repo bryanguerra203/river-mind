@@ -283,7 +283,7 @@ export default function SettingsScreen() {
             resizeMode="contain"
           />
           <Text style={styles.infoText}>RiverMind</Text>
-          <Text style={styles.versionText}>Version 1.3</Text>
+          <Text style={styles.versionText}>Version 1.4</Text>
         </View>
       </View>
 

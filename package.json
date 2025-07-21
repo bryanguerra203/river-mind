@@ -1,7 +1,7 @@
 {
   "name": "rivermind",
   "main": "expo-router/entry",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "scripts": {
     "start": "bunx rork start -p ns2zy1l0xk6znhf6rw8ir --tunnel",
     "start-web": "bunx rork start -p ns2zy1l0xk6znhf6rw8ir --web --tunnel",
