@@ -235,7 +235,7 @@ export default function BankrollSessionScreen() {
   // Calculate session stats
   const totalBuyIn = session.players?.reduce((total, player) => total + player.totalBuyIn, 0) || 0;
   const totalCashOut = session.players?.reduce((total, player) => total + player.totalCashOut, 0) || 0;
-  const sessionProfit = totalCashOut - totalBuyIn;
+  const houseProfit = totalBuyIn - totalCashOut; // Money left in pot = house profit from rake
   const potAmount = totalBuyIn - totalCashOut;
   const activePlayers = session.players?.filter(p => p.cashOuts.length === 0).length || 0;
   const cashedOutPlayers = session.players?.filter(p => p.cashOuts.length > 0).length || 0;
@@ -328,14 +328,14 @@ export default function BankrollSessionScreen() {
             
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Session Profit</Text>
+                <Text style={styles.statLabel}>House Profit</Text>
                 <Text 
                   style={[
                     styles.statValue,
-                    sessionProfit >= 0 ? styles.positive : styles.negative
+                    houseProfit >= 0 ? styles.positive : styles.negative
                   ]}
                 >
-                  {sessionProfit >= 0 ? '+' : ''}{formatCurrency(sessionProfit)}
+                  {houseProfit >= 0 ? '+' : ''}{formatCurrency(houseProfit)}
                 </Text>
               </View>
               
