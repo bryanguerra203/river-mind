@@ -40,13 +40,33 @@ export default function VerifyScreen() {
   }, [resendTimer]);
 
   const handleChangeText = (text: string, index: number) => {
-    // Update the OTP array
+    // Handle pasting a full OTP code
+    if (text.length > 1) {
+      // If pasting a full code, distribute it across all inputs
+      const digits = text.replace(/\D/g, '').slice(0, OTP_LENGTH).split('');
+      
+      const newOtp = [...otp];
+      
+      // Fill in the digits starting from the current index
+      for (let i = 0; i < digits.length && index + i < OTP_LENGTH; i++) {
+        newOtp[index + i] = digits[i];
+      }
+      
+      setOtp(newOtp);
+      
+      // Focus the next empty input or the last input
+      const nextIndex = Math.min(index + digits.length, OTP_LENGTH - 1);
+      inputRefs.current[nextIndex]?.focus();
+      return;
+    }
+    
+    // Handle single character input - only take the first character
     const newOtp = [...otp];
-    newOtp[index] = text;
+    newOtp[index] = text.charAt(0);
     setOtp(newOtp);
 
     // If text is not empty and there is a next input, focus it
-    if (text !== '' && index < OTP_LENGTH - 1) {
+    if (text.charAt(0) !== '' && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -136,10 +156,10 @@ export default function VerifyScreen() {
                 }}
                 style={styles.otpInput}
                 value={otp[index]}
-                onChangeText={(text) => handleChangeText(text.slice(-1), index)}
+                onChangeText={(text) => handleChangeText(text, index)}
                 onKeyPress={(e) => handleKeyPress(e, index)}
                 keyboardType="number-pad"
-                maxLength={1}
+                maxLength={6}
                 selectTextOnFocus
                 selectionColor={colors.accent.primary}
               />
